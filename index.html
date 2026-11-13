@@ -54,7 +54,10 @@ button{font-family:inherit;color:inherit;border:0;background:none;padding:0;text
 .gear{width:2.75rem;height:2.75rem;border-radius:1rem;background:var(--card);display:grid;place-items:center;font-size:1.5rem}
 
 /* tabs */
-#tabs{display:flex;gap:.5rem;align-items:center;flex:none;flex-wrap:wrap}
+#tabs{display:flex;gap:.5rem;align-items:center;flex:none;flex-wrap:wrap;margin-left:.5rem}
+#dt{display:flex;flex-direction:column;gap:.15rem;min-width:0}
+#calh .hint{font-size:.8125rem;color:var(--muted);white-space:nowrap}
+#calh .seg{height:1.75rem;padding:0 .7rem;font-size:.875rem;border-radius:.6rem}
 .seg{height:2.5rem;padding:0 1.25rem;border-radius:.9rem;background:var(--card);font-size:1.125rem;font-weight:500;display:flex;align-items:center;gap:.5rem}
 .seg.on{background:var(--fg);color:var(--bg)}
 .seg.live::after{content:"";width:.6rem;height:.6rem;border-radius:50%;background:var(--now)}
@@ -163,6 +166,19 @@ button{font-family:inherit;color:inherit;border:0;background:none;padding:0;text
 @media (prefers-reduced-motion:no-preference){.cele .big-cat{animation:pop .6s ease-out}.chipx,.b{transition:background .2s}}
 @keyframes pop{0%{transform:scale(.4) rotate(-10deg)}70%{transform:scale(1.1)}100%{transform:scale(1)}}
 
+/* narrow tablet (portrait): keep the top bar on one line */
+@media (min-width:701px) and (max-width:960px){
+  #top{flex-wrap:nowrap;gap:.6rem}
+  #clock{font-size:2.6rem}
+  #clock small{font-size:1.1rem;margin-right:.25rem}
+  #date{font-size:.95rem}
+  #tabs{flex-wrap:nowrap;gap:.3rem;margin-left:0}
+  #tabs .seg{padding:0 .7rem;font-size:1rem;height:2.25rem}
+  #who{flex-wrap:nowrap;gap:.3rem}
+  .chipk{padding:0 .75rem;height:2.4rem;font-size:1rem}
+  .gear{width:2.4rem;height:2.4rem;font-size:1.25rem}
+}
+
 /* phone: one child, three screens (now / today / cat) with a bottom bar */
 @media (max-width:700px){
   html{font-size:clamp(14px,4.3vw,18px)}
@@ -175,7 +191,7 @@ button{font-family:inherit;color:inherit;border:0;background:none;padding:0;text
   .qt .q{font-family:var(--font-b);font-weight:700;font-size:1.3rem}
   #date{font-size:1.05rem;white-space:normal}
   #who{margin-left:0;flex:none;flex-wrap:nowrap}
-  #tabs{display:none}
+  #tabs,#calh{display:none}
   #main{flex-direction:column;flex:none;gap:.8rem}
   .chipk{height:3rem}
   .gear{width:3rem;height:3rem}
@@ -239,15 +255,17 @@ button{font-family:inherit;color:inherit;border:0;background:none;padding:0;text
  <symbol id="i-paw" viewBox="0 0 24 24"><circle cx="6.5" cy="10" r="1.8"/><circle cx="10.5" cy="6.5" r="1.8"/><circle cx="14.5" cy="6.5" r="1.8"/><circle cx="18" cy="10" r="1.8"/><path d="M12 11.5c-3 0-5 2.6-5 4.6 0 1.5 1.4 2.4 2.9 2.4 1 0 1.4-.5 2.1-.5s1.1.5 2.1.5c1.5 0 2.9-.9 2.9-2.4 0-2-2-4.6-5-4.6z"/></symbol>
  <symbol id="i-chev" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></symbol>
  <symbol id="i-next" viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></symbol>
- <symbol id="i-gear" viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h16"/><circle cx="9" cy="6" r="2" fill="var(--card)"/><circle cx="15" cy="12" r="2" fill="var(--card)"/><circle cx="8" cy="18" r="2" fill="var(--card)"/></symbol>
+ <symbol id="i-full" viewBox="0 0 24 24"><path d="M4 9V4h5M15 4h5v5M20 15v5h-5M9 20H4v-5"/></symbol>
+ <symbol id="i-fullx" viewBox="0 0 24 24"><path d="M9 4v5H4M20 9h-5V4M15 20v-5h5M4 15h5v5"/></symbol>
+ <symbol id="i-gear"viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h16"/><circle cx="9" cy="6" r="2" fill="var(--card)"/><circle cx="15" cy="12" r="2" fill="var(--card)"/><circle cx="8" cy="18" r="2" fill="var(--card)"/></symbol>
 </svg>
 
 <div id="app" class="pal-blue">
   <div id="top">
-    <div id="tm"><div id="clock" class="n"></div><div id="date"></div></div>
+    <div id="tm"><div id="clock" class="n"></div><div id="dt"><div id="date"></div><div id="calh"></div></div></div>
+    <div id="tabs"></div>
     <div id="who"></div>
   </div>
-  <div id="tabs"></div>
   <div id="main"></div>
 </div>
 <nav id="bar" aria-label="화면 이동"></nav>
@@ -753,9 +771,11 @@ function render(){
   var w="";
   var shown=shownList();
   if(ST.profiles.length>1)for(var i=0;i<ST.profiles.length;i++){var q=ST.profiles[i],on=isShown(q.id);w+='<button class="chipk pal-'+q.color+(on?" on":"")+'" data-act="pick" data-id="'+esc(q.id)+'" aria-pressed="'+(on?"true":"false")+'" title="눌러서 함께 보기">'+esc(q.name||"우리 아이")+'</button>';}
+  if(document.fullscreenEnabled){var fs=!!document.fullscreenElement;w+='<button class="gear" data-act="full" aria-label="'+(fs?"전체 화면 끝내기":"전체 화면")+'" title="'+(fs?"전체 화면 끝내기":"전체 화면")+'">'+ic(fs?"fullx":"full")+'</button>';}
   w+='<button class="gear" data-act="settings" aria-label="설정">'+ic("gear")+'</button>';
   $("who").innerHTML=w;
-  $("tabs").innerHTML='<button class="seg" data-act="jump" data-h="6" data-id="am">오전</button><button class="seg" data-act="jump" data-h="12" data-id="pm">오후</button><button class="seg" data-act="jump" data-h="18" data-id="ev">저녁</button><button class="seg live" data-act="gonow">지금으로</button><span class="sp"></span>'+calHint();
+  $("tabs").innerHTML='<button class="seg" data-act="jump" data-h="6" data-id="am">오전</button><button class="seg" data-act="jump" data-h="12" data-id="pm">오후</button><button class="seg" data-act="jump" data-h="18" data-id="ev">저녁</button><button class="seg live" data-act="gonow">지금으로</button>';
+  $("calh").innerHTML=calHint();
   $("main").innerHTML='<div class="board">'+boardHtml(shown,now)+'</div>'+sideHtml(now);
   bindScroll();
   if(!userMoved||keep===null)scrollNow(false);else{progScroll=true;setScroll(keep);setTimeout(function(){progScroll=false;},150);}
@@ -945,6 +965,7 @@ document.addEventListener("click",function(e){
   else if(a==="quote"){openSheet(sheetQuote());}
   else if(a==="close"){closeSheet();}
   else if(a==="settings"){requestSettings();}
+  else if(a==="full"){try{if(document.fullscreenElement)document.exitFullscreen();else document.documentElement.requestFullscreen();}catch(e){}}
   else if(a==="forgot"){showForgot();}
   else if(a==="pincreate"){
     var p1=$("pin1").value,p2v=$("pin2").value;
@@ -984,6 +1005,7 @@ document.addEventListener("keydown",function(e){
 if(!ST.profiles.length){ST.profiles=[{id:uid(),name:"",grade:"",color:"blue"}];ST.current=ST.profiles[0].id;save();render();openSettings(true);}
 if(mq.addEventListener)mq.addEventListener("change",function(){needScroll=true;render();});else if(mq.addListener)mq.addListener(function(){needScroll=true;render();});
 tick();setInterval(tick,1000);
+document.addEventListener("fullscreenchange",function(){render();});
 gInit();setInterval(refreshEvents,300000);
 document.addEventListener("visibilitychange",function(){if(!document.hidden)refreshEvents();});
 window.addEventListener("resize",function(){fitBlocks();if(!userMoved)scrollNow(false);});
