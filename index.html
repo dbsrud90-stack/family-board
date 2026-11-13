@@ -56,6 +56,11 @@ button{font-family:inherit;color:inherit;border:0;background:none;padding:0;text
 /* tabs */
 #tabs{display:flex;gap:.5rem;align-items:center;flex:none;flex-wrap:wrap;margin-left:.5rem}
 #dt{display:flex;flex-direction:column;gap:.15rem;min-width:0}
+#dr{display:flex;align-items:center;gap:.5rem;min-width:0}
+.dsw{display:inline-flex;background:var(--card);border-radius:.8rem;padding:.15rem;gap:.1rem;flex:none}
+.dsw button{height:1.7rem;padding:0 .75rem;border-radius:.65rem;font-size:.95rem;font-weight:700;color:var(--muted)}
+.dsw button.on{background:var(--fg);color:var(--bg)}
+.ro{cursor:default}
 #calh .hint{font-size:.8125rem;color:var(--muted);white-space:nowrap}
 #calh .seg{height:1.75rem;padding:0 .7rem;font-size:.875rem;border-radius:.6rem}
 .seg{height:2.5rem;padding:0 1.25rem;border-radius:.9rem;background:var(--card);font-size:1.125rem;font-weight:500;display:flex;align-items:center;gap:.5rem}
@@ -191,7 +196,12 @@ button{font-family:inherit;color:inherit;border:0;background:none;padding:0;text
   .qt .q{font-family:var(--font-b);font-weight:700;font-size:1.3rem}
   #date{font-size:1.05rem;white-space:normal}
   #who{margin-left:0;flex:none;flex-wrap:nowrap}
-  #tabs,#calh{display:none}
+  #tabs,#dr{display:none}
+  .dbar{position:sticky;top:0;z-index:6;display:flex;align-items:center;justify-content:space-between;gap:.6rem;background:var(--bg);padding:.35rem 0;margin:-.35rem 0 0}
+  .dbar .dsw button{height:2.4rem;padding:0 1rem;font-size:1.05rem}
+  .dbar .dsum{font-size:1.05rem;color:var(--muted);text-align:right;min-width:0}
+  .card.cp{display:flex;flex-wrap:wrap;align-items:center;gap:.45rem}
+  .card.cp .cl{margin-right:.2rem}
   #main{flex-direction:column;flex:none;gap:.8rem}
   .chipk{height:3rem}
   .gear{width:3rem;height:3rem}
@@ -262,7 +272,7 @@ button{font-family:inherit;color:inherit;border:0;background:none;padding:0;text
 
 <div id="app" class="pal-blue">
   <div id="top">
-    <div id="tm"><div id="clock" class="n"></div><div id="dt"><div id="date"></div><div id="calh"></div></div></div>
+    <div id="tm"><div id="clock" class="n"></div><div id="dt"><div id="date"></div><div id="dr"><div id="dsw"></div><div id="calh"></div></div></div></div>
     <div id="tabs"></div>
     <div id="who"></div>
   </div>
@@ -329,11 +339,11 @@ var SAMPLE={
   ["14:40","15:30","6교시 · 하교","school",[]],["16:00","17:00","영어 학원","academy",["학원 가방","숙제 검사 받기"]],["17:00","18:00","숙제 시간","home",["수학 문제집 4쪽","독서 30분"]],
   ["18:00","19:00","저녁 식사","meal",[]],["19:00","19:40","씻기","home",[]],["19:40","20:20","내일 준비","home",["책가방 챙기기"]],["20:40","21:10","잠자리","sleep",[]]]}
 };
-var EV={},EVKEY="familyboard.ev.v1";
-try{var evc=JSON.parse(localStorage.getItem(EVKEY)||"null");if(evc&&evc.date===dkey(new Date())&&evc.d)EV=evc.d;}catch(e){}
-function saveEv(){try{localStorage.setItem(EVKEY,JSON.stringify({date:dkey(new Date()),d:EV}));}catch(e){}}
-function dayOf(p){
-  if(p.cal)return EV[p.id]||{allday:[],events:[]};
+var EV={},EVN={},EVKEY="familyboard.ev.v1",VIEW=0; /* EV = today's events, EVN = tomorrow's; VIEW 0 = today, 1 = tomorrow (read-only preview) */
+try{var evc=JSON.parse(localStorage.getItem(EVKEY)||"null");if(evc&&evc.date===dkey(new Date())&&evc.d){EV=evc.d;EVN=evc.n||{};}}catch(e){}
+function saveEv(){try{localStorage.setItem(EVKEY,JSON.stringify({date:dkey(new Date()),d:EV,n:EVN}));}catch(e){}}
+function dayOf(p,off){
+  if(p.cal)return (off?EVN:EV)[p.id]||{allday:[],events:[]};
   var g=parseInt(p.grade,10),s=(g&&g>=4)?SAMPLE.high:SAMPLE.low;
   var evs=s.ev.map(function(e,i){return {id:"s"+i,title:e[2],start:tm(e[0]),end:tm(e[1]),todos:e[4].map(function(t){return {t:t,prep:(e[3]==="school"||e[3]==="academy")};})};});
   return {allday:s.allday.map(function(t,i){return {id:"sd"+i,title:t};}),events:evs};
@@ -514,10 +524,10 @@ function gLoadCals(){
 function refreshEvents(){
   if(!G.connected)return Promise.resolve();
   if(!G.token||G.exp<Date.now()+60000){G.need=true;render();return Promise.resolve();}
-  var now=new Date(),t0=new Date(now.getFullYear(),now.getMonth(),now.getDate()),t1=new Date(t0.getTime()+86400000),today=dkey(now);
+  var now=new Date(),t0=new Date(now.getFullYear(),now.getMonth(),now.getDate()),t1=new Date(t0.getTime()+2*86400000),today=dkey(now),tmr=dkey(new Date(t0.getTime()+86400000));
   var jobs=ST.profiles.filter(function(p){return p.cal;}).map(function(p){
     var url="https://www.googleapis.com/calendar/v3/calendars/"+encodeURIComponent(p.cal.id)+"/events?singleEvents=true&orderBy=startTime&maxResults=250&timeMin="+encodeURIComponent(t0.toISOString())+"&timeMax="+encodeURIComponent(t1.toISOString());
-    return gGet(url).then(function(j){var d=buildDay(j.items||[],today);d.updated=Date.now();EV[p.id]=d;saveEv();}).catch(function(){});
+    return gGet(url).then(function(j){var it=j.items||[],d=buildDay(it,today),n=buildDay(it,tmr);d.updated=n.updated=Date.now();EV[p.id]=d;EVN[p.id]=n;saveEv();}).catch(function(){});
   });
   return Promise.all(jobs).then(function(){render();});
 }
@@ -531,7 +541,7 @@ function gInit(){
 }
 function gDisconnect(){
   try{if(G.token&&gReady())google.accounts.oauth2.revoke(G.token,function(){});}catch(e){}
-  G.token="";G.exp=0;G.connected=false;G.need=false;G.cals=null;gSave();EV={};
+  G.token="";G.exp=0;G.connected=false;G.need=false;G.cals=null;gSave();EV={};EVN={};
   ST.profiles.forEach(function(p){p.cal=null;});save();
 }
 function ago(ts){var d=new Date(ts);return fmt(d.getHours()*60+d.getMinutes());}
@@ -562,7 +572,11 @@ function fmtS(m){var h=Math.floor(m/60)%24;return (h%12||12)+":"+p2(m%60);}
 /* ---------- timeline ---------- */
 var PPH=7,DAY={s:5.5,e:22},scrollT=null,progScroll=false,userMoved=false;
 function rootPx(){return parseFloat(getComputedStyle(document.documentElement).fontSize)||16;}
-function nowTop(){var n=new Date(),m=n.getHours()*60+n.getMinutes();return Math.max(0,((m/60-DAY.s)-0.75)*PPH*rootPx());}
+/* the day being viewed (VIEW 1 = tomorrow) */
+function vday(now){return VIEW?new Date(now.getFullYear(),now.getMonth(),now.getDate()+1):now;}
+function vkey(now){return dkey(vday(now));}
+function daySw(){return '<div class="dsw" role="group" aria-label="보는 날"><button data-act="day" data-v="0" class="'+(VIEW?"":"on")+'" aria-pressed="'+(VIEW?"false":"true")+'">오늘</button><button data-act="day" data-v="1" class="'+(VIEW?"on":"")+'" aria-pressed="'+(VIEW?"true":"false")+'">내일</button></div>';}
+function nowTop(){var n=new Date(),m=VIEW?420:n.getHours()*60+n.getMinutes();return Math.max(0,((m/60-DAY.s)-0.75)*PPH*rootPx());}
 function markTabs(){
   var t=document.querySelector(".tl");if(!t)return;
   var h=DAY.s+t.scrollTop/(PPH*rootPx())+0.3,id=h<12?"am":h<18?"pm":"ev";
@@ -611,7 +625,7 @@ function layout(evs){
   cl.forEach(function(c){var lanes=[];c.forEach(function(e){var l=0;while(lanes[l]!==undefined&&lanes[l]>e.start)l++;lanes[l]=e._ve;e.lane=l;});c.forEach(function(e){e.lanes=lanes.length;});});
   return s;
 }
-function chipHtml(key,label,on){return '<span class="chipx'+(on?" on":"")+'" data-act="tick" data-key="'+esc(key)+'"><i>'+(on?ic("check"):"")+'</i>'+esc(label)+'</span>';}
+function chipHtml(key,label,on){return '<span class="chipx'+(on?" on":"")+(VIEW?" ro":"")+'"'+(VIEW?'':' data-act="tick" data-key="'+esc(key)+'"')+'><i>'+(on?ic("check"):"")+'</i>'+esc(label)+'</span>';}
 /* one hour axis, then one column per shown child */
 function boardHtml(list,now){
   var nh=DAY.e-DAY.s;
@@ -622,11 +636,12 @@ function boardHtml(list,now){
   return h;
 }
 function colHtml(p,now){
-  var date=dkey(now),S0=DAY.s*60,E0=DAY.e*60,nh=DAY.e-DAY.s,D=dayOf(p),ev=layout(D.events);
-  var tt=totals(p,date),sg=stageOf(stampCount(p.id)),ex=stamped(p.id,date)?"happy":"normal";
-  var left=!tt.n?"":(tt.c===tt.n?'<span class="left done">오늘 도장 완료</span>':'<span class="left">'+(tt.n-tt.c)+'개 남았어요</span>');
+  var today=dkey(now),date=vkey(now),S0=DAY.s*60,E0=DAY.e*60,nh=DAY.e-DAY.s,D=dayOf(p,VIEW),ev=layout(D.events);
+  var tt=totals(p,today),sg=stageOf(stampCount(p.id)),ex=stamped(p.id,today)?"happy":"normal";
+  var left=(!tt.n||VIEW)?"":(tt.c===tt.n?'<span class="left done">오늘 도장 완료</span>':'<span class="left">'+(tt.n-tt.c)+'개 남았어요</span>');
+  if(VIEW)left=D.events.length?'<span class="left">내일 일정 '+D.events.length+'개</span>':'<span class="left">내일은 일정이 없어요</span>';
   var h='<div class="kcol pal-'+p.color+'"><button class="kh" data-act="cat" data-p="'+esc(p.id)+'"><span class="catx">'+catSVG(p.color,sg,ex)+'</span><span class="nm">'+esc(p.name||"우리 아이")+'<small>'+esc(p.grade||"")+'</small></span>'+left+'</button>';
-  h+='<div class="ad"><span class="al">오늘 할 일</span>';
+  h+='<div class="ad"><span class="al">'+(VIEW?"내일":"오늘")+' 할 일</span>';
   if(!D.allday.length)h+='<span class="al">없어요</span>';
   for(var a=0;a<D.allday.length;a++){var ak=p.id+"_"+D.allday[a].id+"_t";h+=chipHtml(ak,D.allday[a].title,isOn(date,ak));}
   h+='</div><div class="tl"><div class="tli" style="height:'+(nh*PPH)+'rem">';
@@ -635,7 +650,7 @@ function colHtml(p,now){
 }
 /* grid lines + event blocks + "now" line, shared by the tablet board and the phone timeline */
 function blocksHtml(p,now,ev,S0,E0,nh){
-  var date=dkey(now),nowMin=now.getHours()*60+now.getMinutes(),h='';
+  var date=vkey(now),nowMin=VIEW?-1:now.getHours()*60+now.getMinutes(),h='';
   for(var g=Math.ceil(DAY.s);g<DAY.e;g++)h+='<div class="gl" style="top:'+((g-DAY.s)/nh*100)+'%"></div>';
   for(var i=0;i<ev.length;i++){
     var E=ev[i],s0=E.start,e0=E.end;if(e0<=S0||s0>=E0)continue;
@@ -679,6 +694,7 @@ function curNext(p,now){
   return {D:D,m:m,cur:cu,next:nx};
 }
 function todoRow(key,label,on){return '<button class="todo'+(on?" dn":"")+'" data-act="tick" data-key="'+esc(key)+'"><span class="cb'+(on?" on":"")+'">'+(on?ic("check"):"")+'</span><span class="tt2">'+esc(label)+'</span></button>';}
+function todoRowAny(key,label,on){return VIEW?'<div class="todo ro'+(on?" dn":"")+'"><span class="cb'+(on?" on":"")+'"></span><span class="tt2">'+esc(label)+'</span></div>':todoRow(key,label,on);}
 function heroHtml(p,x,date){
   var h='<div class="hero"><div class="lbl">지금</div>';
   if(x.cur){
@@ -695,10 +711,11 @@ function nextHtml(x){
   var e=x.next;
   return '<div class="nx"><div class="nxi">'+ic("next")+'</div><div><div class="s">다음</div><div class="t">'+esc(e.title)+'</div><div class="s">'+fmt(e.start)+" · "+dur(e.start-x.m)+' 뒤</div></div></div>';
 }
-function alldayCard(p,D,date){
+/* compact: one wrapping row of chips (used on the phone "today" screen to save height) */
+function alldayCard(p,D,date,compact){
   if(!D.allday.length)return '';
-  var h='<div class="card"><div class="cl">오늘 할 일</div>';
-  for(var a=0;a<D.allday.length;a++){var k=p.id+"_"+D.allday[a].id+"_t";h+=todoRow(k,D.allday[a].title,isOn(date,k));}
+  var lb=(VIEW?"내일":"오늘")+" 할 일",h='<div class="card'+(compact?" cp":"")+'"><div class="cl">'+lb+'</div>';
+  for(var a=0;a<D.allday.length;a++){var k=p.id+"_"+D.allday[a].id+"_t",on=isOn(date,k);h+=compact?chipHtml(k,D.allday[a].title,on):todoRowAny(k,D.allday[a].title,on);}
   return h+'</div>';
 }
 function infoHtml(now){
@@ -713,7 +730,7 @@ function infoHtml(now){
 /* shown when the child's calendar is connected but today's events can't be refreshed (sign-in expired) */
 function calNotice(p){
   if(!p.cal)return '';
-  var d=EV[p.id];
+  var d=(VIEW?EVN:EV)[p.id];
   if(G.need||(!d&&!G.token))return '<div class="card"><div class="cl">'+(d?"저장해 둔 일정을 보여주고 있어요":"일정을 불러오지 못했어요")+'</div><div class="sdt">구글 캘린더에 다시 연결하면 최신 일정으로 바뀌어요.</div><button class="pb go" data-act="greauth">구글 다시 연결</button></div>';
   if(!d)return '<div class="card"><div class="sdt">일정을 불러오는 중이에요…</div></div>';
   return '';
@@ -723,14 +740,16 @@ function nowScreen(p,now){
   return calNotice(p)+heroHtml(p,x,date)+alldayCard(p,x.D,date)+nextHtml(x)+infoHtml(now)+'<div class="hintrow">'+calHint()+'</div>';
 }
 function todayScreen(p,now){
-  var D=dayOf(p),m=now.getHours()*60+now.getMinutes(),date=dkey(now),S0=DAY.s*60,E0=DAY.e*60,nh=DAY.e-DAY.s,total=D.events.length,done=0;
+  var D=dayOf(p,VIEW),m=now.getHours()*60+now.getMinutes(),date=vkey(now),S0=DAY.s*60,E0=DAY.e*60,nh=DAY.e-DAY.s,total=D.events.length,done=0,vd=vday(now);
   D.events.forEach(function(e){if(e.end<=m)done++;});
-  var h='<div><div class="sh">오늘 시간표</div><div class="sdt">'+(now.getMonth()+1)+"월 "+now.getDate()+"일 "+DOW[now.getDay()]+'요일</div><div class="sdt">'+(total?total+"개 중 "+done+"개가 지났어요":"오늘은 일정이 없어요")+'</div></div>';
-  h+=calNotice(p)+alldayCard(p,D,date);
+  /* one sticky row: day switch + short summary (stays visible while the timeline scrolls) */
+  var sum=VIEW?(vd.getMonth()+1)+"월 "+vd.getDate()+"일 "+DOW[vd.getDay()]+"요일 · "+(total?total+"개":"일정 없어요"):(total?total+"개 중 "+done+"개 지났어요":"오늘은 일정이 없어요");
+  var h='<div class="dbar">'+daySw()+'<span class="dsum">'+sum+'</span></div>';
+  h+=calNotice(p)+alldayCard(p,D,date,true);
   h+='<div class="ptl" style="height:'+(nh*PPH)+'rem"><div class="plab">';
   for(var hh=Math.ceil(DAY.s);hh<DAY.e;hh++)h+='<span style="top:'+((hh-DAY.s)/nh*100)+'%">'+(hh%12||12)+'시</span>';
   h+='</div><div class="pin">'+blocksHtml(p,now,layout(D.events),S0,E0,nh)+'</div></div>';
-  return h+'<button class="fab" data-act="gonow">지금으로</button>';
+  return h+(VIEW?'':'<button class="fab" data-act="gonow">지금으로</button>');
 }
 function catScreen(p,now){
   var n=stampCount(p.id),sg=stageOf(n),date=dkey(now),tt=totals(p,date);
@@ -750,7 +769,7 @@ function navHtml(){
 }
 function scrollTodayToNow(smooth){
   var el=document.querySelector(".ptl");if(!el)return;
-  var n=new Date(),m=n.getHours()*60+n.getMinutes(),root=rootPx();
+  var n=new Date(),m=VIEW?420:n.getHours()*60+n.getMinutes(),root=rootPx();
   var y=window.scrollY+el.getBoundingClientRect().top+((m/60-DAY.s)-0.4)*PPH*root-root*4;
   try{window.scrollTo({top:Math.max(0,y),behavior:smooth?"smooth":"auto"});}catch(e){window.scrollTo(0,Math.max(0,y));}
 }
@@ -760,6 +779,7 @@ function sheetWho(){
   return h+'<div><button class="pb x" data-act="close">닫기</button></div>';
 }
 function renderPhone(now,p){
+  if(TAB!=="today")VIEW=0; /* tomorrow preview exists only on the today screen */
   $("tabs").innerHTML="";
   var w="";
   if(ST.profiles.length>1)w+='<button class="chipk on" data-act="whoami">'+esc(p.name||"우리 아이")+ic("chev")+'</button>';
@@ -772,8 +792,10 @@ function renderPhone(now,p){
 }
 
 /* ---------- render ---------- */
+function setDate(n){var d=isPhone()?n:vday(n);$("date").textContent=(d.getMonth()+1)+"월 "+d.getDate()+"일 "+DOW[d.getDay()]+"요일"+(!isPhone()&&VIEW?" (내일)":"");}
 function render(){
   var now=new Date(),p=cur();if(!p)return;
+  setDate(now);
   $("app").className="pal-"+p.color;
   if(isPhone()){renderPhone(now,p);return;}
   $("bar").innerHTML="";
@@ -784,7 +806,8 @@ function render(){
   if(document.fullscreenEnabled){var fs=!!document.fullscreenElement;w+='<button class="gear" data-act="full" aria-label="'+(fs?"전체 화면 끝내기":"전체 화면")+'" title="'+(fs?"전체 화면 끝내기":"전체 화면")+'">'+ic(fs?"fullx":"full")+'</button>';}
   w+='<button class="gear" data-act="settings" aria-label="설정">'+ic("gear")+'</button>';
   $("who").innerHTML=w;
-  $("tabs").innerHTML='<button class="seg" data-act="jump" data-h="6" data-id="am">오전</button><button class="seg" data-act="jump" data-h="12" data-id="pm">오후</button><button class="seg" data-act="jump" data-h="18" data-id="ev">저녁</button><button class="seg live" data-act="gonow">지금으로</button>';
+  $("tabs").innerHTML='<button class="seg" data-act="jump" data-h="6" data-id="am">오전</button><button class="seg" data-act="jump" data-h="12" data-id="pm">오후</button><button class="seg" data-act="jump" data-h="18" data-id="ev">저녁</button>'+(VIEW?'':'<button class="seg live" data-act="gonow">지금으로</button>');
+  $("dsw").innerHTML=daySw();
   $("calh").innerHTML=calHint();
   $("main").innerHTML='<div class="board">'+boardHtml(shown,now)+'</div>'+sideHtml(now);
   bindScroll();
@@ -796,8 +819,11 @@ function tick(){
   var n=new Date(),h=n.getHours(),m=n.getMinutes(),s=n.getSeconds(),h12=h%12||12;
   $("clock").innerHTML='<small>'+(h<12?"오전":"오후")+'</small>'+h12+'<span class="co'+(s%2?" off":"")+'">:</span>'+p2(m);
   if(m!==lastMin){lastMin=m;
-    $("date").textContent=(n.getMonth()+1)+"월 "+n.getDate()+"일 "+DOW[n.getDay()]+"요일";
-    lastDay=dkey(n);weatherCheck();
+    var dk=dkey(n);
+    if(lastDay&&dk!==lastDay){ /* a new day: tomorrow's events become today's, go back to the today view */
+      if(dkey(new Date(n.getFullYear(),n.getMonth(),n.getDate()-1))===lastDay){EV=EVN;EVN={};saveEv();}
+      VIEW=0;userMoved=false;needScroll=true;refreshEvents();}
+    lastDay=dk;weatherCheck();
     render();}
 }
 
@@ -806,12 +832,12 @@ function openSheet(h){$("sbox").className="";$("sbox").innerHTML=h;$("sheet").cl
 function closeSheet(){$("sheet").classList.remove("show");$("sbox").className="";}
 var settingsOpen=false;
 function sheetBlock(eid,pid){
-  var p=profileById(pid)||cur(),D=dayOf(p),e=null,date=dkey(new Date());
+  var p=profileById(pid)||cur(),D=dayOf(p,VIEW),e=null,date=vkey(new Date());
   for(var q=0;q<D.events.length;q++)if(D.events[q].id===eid)e=D.events[q];
   if(!e)return '<h3>일정을 찾지 못했어요</h3><div><button class="pb x" data-act="close">닫기</button></div>';
   var h='<h3>'+esc(e.title)+'</h3><div class="sub">'+fmt(e.start)+" ~ "+fmt(e.end>=1440?1439:e.end)+'</div>';
   if(!e.todos.length)h+='<div class="sub">이 시간에는 따로 할 일이 없어요.</div>';
-  for(var j=0;j<e.todos.length;j++){var key=p.id+"_"+eid+"_"+j,on=isOn(date,key);h+='<button class="big'+(on?" on":"")+'" data-act="tick" data-key="'+esc(key)+'" data-sheet="'+esc(eid)+'"><i>'+(on?ic("check"):"")+'</i>'+esc(e.todos[j].t)+'</button>';}
+  for(var j=0;j<e.todos.length;j++){var key=p.id+"_"+eid+"_"+j,on=isOn(date,key);h+='<button class="big'+(on?" on":"")+(VIEW?" ro":"")+'"'+(VIEW?' disabled':' data-act="tick" data-key="'+esc(key)+'" data-sheet="'+esc(eid)+'"')+'><i>'+(on?ic("check"):"")+'</i>'+esc(e.todos[j].t)+'</button>';}
   return h+'<div><button class="pb x" data-act="close">닫기</button></div>';
 }
 function sheetCele(c,p){
@@ -940,7 +966,7 @@ document.addEventListener("change",function(e){
     var pid=t.getAttribute("data-id");
     for(var i=0;i<ST.profiles.length;i++)if(ST.profiles[i].id===pid){
       var cal=null;if(t.value&&G.cals)for(var k=0;k<G.cals.length;k++)if(G.cals[k].id===t.value)cal={id:G.cals[k].id,name:G.cals[k].name};
-      ST.profiles[i].cal=cal;delete EV[pid];}
+      ST.profiles[i].cal=cal;delete EV[pid];delete EVN[pid];}
     save();userMoved=false;render();refreshEvents();
   }
 });
@@ -949,6 +975,7 @@ document.addEventListener("click",function(e){
   if(!el||el===document){if(e.target===$("sheet")&&!settingsOpen)closeSheet();return;}
   var a=el.getAttribute("data-act"),date=dkey(new Date()),p=cur();
   if(a==="gonow"){if(isPhone())scrollTodayToNow(true);else scrollNow(true);}
+  else if(a==="day"){VIEW=el.getAttribute("data-v")==="1"?1:0;userMoved=false;needScroll=true;render();}
   else if(a==="tab"){TAB=el.getAttribute("data-t");needScroll=(TAB==="today");render();if(TAB!=="today")window.scrollTo(0,0);}
   else if(a==="whoami"){openSheet(sheetWho());}
   else if(a==="jump"){jumpTo(+el.getAttribute("data-h"));}
@@ -965,6 +992,7 @@ document.addEventListener("click",function(e){
   }
   else if(a==="tick"){
     e.stopPropagation();
+    if(VIEW)return; /* tomorrow is preview only */
     var tkey=el.getAttribute("data-key"),tp=profileOfKey(tkey)||p;
     var cele=toggle(tp,date,tkey);render();
     if(cele)openSheet(sheetCele(cele,tp));
