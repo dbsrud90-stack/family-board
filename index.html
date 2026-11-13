@@ -85,11 +85,12 @@ button{font-family:inherit;color:inherit;border:0;background:none;padding:0;text
 .chipx{background:var(--chip);color:var(--fg);border-radius:.75rem;padding:.2rem .75rem .2rem .45rem;font-size:1.125rem;font-weight:500;display:inline-flex;gap:.5rem;align-items:center;cursor:pointer;line-height:1.3}
 .chipx i{width:1.4rem;height:1.4rem;border-radius:.45rem;border:.125rem solid var(--muted);display:grid;place-items:center;font-style:normal;color:#fff;font-size:1rem;flex:none}
 .chipx.on{text-decoration:line-through;color:var(--muted)}.chipx.on i{background:var(--ok);border-color:var(--ok)}
-.b{position:absolute;border-radius:.9rem;padding:.3rem .75rem;overflow:hidden;overflow:clip;cursor:pointer;display:block;background:var(--cs);color:var(--ci)}
+.b{position:absolute;min-height:2.4rem;border-radius:.9rem;padding:.3rem .75rem;overflow:hidden;overflow:clip;cursor:pointer;display:block;background:var(--cs);color:var(--ci)}
 .b.now{background:var(--c);color:var(--cf);box-shadow:0 .4rem 1rem rgba(0,0,0,.18);outline:.15rem solid var(--ci);outline-offset:-.15rem;z-index:2}
 .b.past{opacity:.7}
 .b .bt{display:flex;align-items:baseline;gap:.5rem;white-space:nowrap;line-height:1.3;position:sticky;top:0;background:inherit;z-index:1}
-.b .tt{font-size:1.2rem;font-weight:700}
+.b .tt{font-size:1.2rem;font-weight:700;min-width:0;overflow:hidden;text-overflow:ellipsis}
+.b.ln .tt{font-size:1.1rem}
 .b small{font-size:1.125rem;font-weight:400;opacity:.8}
 .b .pg{margin-left:auto;font-size:1.125rem;font-weight:700;background:var(--card);color:var(--fg);border-radius:.7rem;padding:0 .5rem;display:none}
 .b .pg.ok{background:var(--ok);color:#fff}
@@ -217,6 +218,7 @@ button{font-family:inherit;color:inherit;border:0;background:none;padding:0;text
   .catcard{background:var(--card);border-radius:1.5rem;padding:1rem;text-align:center}
   .bigcat{width:11rem;height:11rem;margin:0 auto .3rem;display:block}
   .catcard .pbar{margin:.6rem 1rem}
+  .b.ln small{display:none}
   .hintrow{text-align:center}
   .hintrow .hint{font-size:1.05rem;color:var(--muted)}
 }
@@ -449,7 +451,7 @@ function buildDay(events,today){
   });
   return {allday:ad,events:ev};
 }
-window.__fb={buildDay:buildDay,parseTodos:parseTodos};
+window.__fb={buildDay:buildDay,parseTodos:parseTodos,setDay:function(pid,d){EV[pid]=d;render();}};
 function gRequest(interactive){
   if(!GOOGLE_CLIENT_ID||!gReady())return false;
   if(!G.tc)G.tc=google.accounts.oauth2.initTokenClient({client_id:GOOGLE_CLIENT_ID,scope:GSCOPE,callback:gOnToken,error_callback:function(e){G.need=true;G.msg=(e&&e.type)||"error";render();}});
@@ -555,10 +557,15 @@ function bindScroll(){
     if(!progScroll){userMoved=true;clearTimeout(scrollT);scrollT=setTimeout(function(){scrollNow(true);},120000);}
   },{passive:true});
 }
+/* every block is drawn at least MINH tall (one text line), so a 5-minute event still shows its title.
+   Lanes are assigned using that visual length, so short events never sit on top of the next one. */
+var MINH=2.4;
+function minMin(){return MINH/PPH*60;}
 function layout(evs){
+  var mm=minMin();
   var s=evs.slice().sort(function(a,b){return a.start-b.start||a.end-b.end;}),cl=[],cu=null,end=-1;
-  s.forEach(function(e){if(!cu||e.start>=end){cu=[];cl.push(cu);end=e.end;}else end=Math.max(end,e.end);cu.push(e);});
-  cl.forEach(function(c){var lanes=[];c.forEach(function(e){var l=0;while(lanes[l]!==undefined&&lanes[l]>e.start)l++;lanes[l]=e.end;e.lane=l;});c.forEach(function(e){e.lanes=lanes.length;});});
+  s.forEach(function(e){e._ve=Math.max(e.end,e.start+mm);if(!cu||e.start>=end){cu=[];cl.push(cu);end=e._ve;}else end=Math.max(end,e._ve);cu.push(e);});
+  cl.forEach(function(c){var lanes=[];c.forEach(function(e){var l=0;while(lanes[l]!==undefined&&lanes[l]>e.start)l++;lanes[l]=e._ve;e.lane=l;});c.forEach(function(e){e.lanes=lanes.length;});});
   return s;
 }
 function chipHtml(key,label,on){return '<span class="chipx'+(on?" on":"")+'" data-act="tick" data-key="'+esc(key)+'"><i>'+(on?ic("check"):"")+'</i>'+esc(label)+'</span>';}
@@ -583,10 +590,10 @@ function blocksHtml(p,now,ev,S0,E0,nh){
   for(var g=Math.ceil(DAY.s);g<DAY.e;g++)h+='<div class="gl" style="top:'+((g-DAY.s)/nh*100)+'%"></div>';
   for(var i=0;i<ev.length;i++){
     var E=ev[i],s0=E.start,e0=E.end;if(e0<=S0||s0>=E0)continue;
-    var cs=Math.max(s0,S0),ce=Math.min(e0,E0),top=(cs-S0)/(E0-S0)*100,hgt=(ce-cs)/(E0-S0)*100;
+    var cs=Math.max(s0,S0),ce=Math.min(e0,E0),top=(cs-S0)/(E0-S0)*100,hgt=Math.max(ce-cs,minMin())/(E0-S0)*100;
     var n=E.todos.length,c=0;for(var j=0;j<n;j++)if(isOn(date,p.id+"_"+E.id+"_"+j))c++;
     var cu=nowMin>=s0&&nowMin<e0,past=e0<=nowMin,ln=E.lanes||1,lf=(E.lane||0)*100/ln;
-    h+='<div class="b'+(cu?" now":"")+(past?" past":"")+'" data-act="open" data-e="'+esc(E.id)+'" style="top:calc('+top+'% + .125rem);height:calc('+hgt+'% - .25rem);left:calc('+lf+'% + .5rem);width:calc('+(100/ln)+'% - 1rem)">'+
+    h+='<div class="b'+(cu?" now":"")+(past?" past":"")+(ln>1?" ln":"")+'" data-act="open" data-e="'+esc(E.id)+'" style="top:calc('+top+'% + .125rem);height:calc('+hgt+'% - .25rem);left:calc('+lf+'% + .5rem);width:calc('+(100/ln)+'% - 1rem)">'+
       '<div class="bt"><span class="tt">'+esc(E.title)+'</span><small>'+fmtS(s0)+'</small>'+(n?'<span class="pg'+(c===n?" ok":"")+'">'+c+'/'+n+'</span>':'')+'</div>';
     if(n){h+='<div class="tk">';for(j=0;j<n;j++)h+=chipHtml(p.id+"_"+E.id+"_"+j,E.todos[j].t,isOn(date,p.id+"_"+E.id+"_"+j));h+='</div>';}
     h+='</div>';
