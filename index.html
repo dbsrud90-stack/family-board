@@ -424,16 +424,26 @@ function wInfo(c){
   return["cloud",""];
 }
 function wetDay(d){var c=d.code;return d.rain>=50||(c>=51&&c<=67)||(c>=80&&c<=82)||c>=95||(c>=71&&c<=77);}
+var wTry=0,wBusy=false;
+/* no usable weather -> fetch now (retry after 5 min if it failed); otherwise refresh hourly or on a new day */
+function weatherCheck(){
+  var n=Date.now(),ok=W&&W.city===ST.city;
+  var due=!ok||!(n-W.updated<3600000)||W.day!==dkey(new Date());
+  if(!due||wBusy)return;
+  if(n-wTry<(WFAIL?300000:60000))return;
+  loadWeather();
+}
 function loadWeather(){
   var c=CITIES[ST.city]||CITIES[0];
+  wTry=Date.now();wBusy=true;
   var url="https://api.open-meteo.com/v1/forecast?latitude="+c[1]+"&longitude="+c[2]+"&current=temperature_2m&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max&timezone=Asia%2FSeoul&forecast_days=2";
   if(!window.fetch)return;
   fetch(url).then(function(r){if(!r.ok)throw new Error("http "+r.status);return r.json();}).then(function(j){
     var d=[0,1].map(function(i){return {code:j.daily.weather_code[i],max:j.daily.temperature_2m_max[i],min:j.daily.temperature_2m_min[i],rain:j.daily.precipitation_probability_max[i]||0};});
     W={city:ST.city,day:j.daily.time[0],updated:Date.now(),temp:j.current.temperature_2m,d:d};WFAIL=false;
     try{localStorage.setItem(WKEY,JSON.stringify(W));}catch(e){}
-    render();
-  }).catch(function(){WFAIL=true;render();});
+    wBusy=false;render();
+  }).catch(function(){wBusy=false;WFAIL=true;render();});
 }
 function weatherRows(now){
   if(!W||W.city!==ST.city)return {rows:[],tag:WFAIL?"날씨를 못 불러왔어요":"날씨 불러오는 중"};
@@ -787,7 +797,7 @@ function tick(){
   $("clock").innerHTML='<small>'+(h<12?"오전":"오후")+'</small>'+h12+'<span class="co'+(s%2?" off":"")+'">:</span>'+p2(m);
   if(m!==lastMin){lastMin=m;
     $("date").textContent=(n.getMonth()+1)+"월 "+n.getDate()+"일 "+DOW[n.getDay()]+"요일";
-    if(dkey(n)!==lastDay){lastDay=dkey(n);loadWeather();}
+    lastDay=dkey(n);weatherCheck();
     render();}
 }
 
