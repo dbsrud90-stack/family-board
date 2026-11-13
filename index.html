@@ -134,7 +134,7 @@ button{font-family:inherit;color:inherit;border:0;background:none;padding:0;text
 #sbox.set .sfoot{flex:none;padding:.6rem 1.2rem .9rem;border-top:1px solid var(--soft)}
 #sbox.set .sfoot .pb{width:100%;justify-content:center;margin:0}
 #sbox.set .sub{font-size:1rem;margin:0 0 .3rem}
-#sbox.set .sec{font-size:1.05rem;margin:.7rem 0 .25rem}
+#sbox.set .sec{font-size:1.05rem;margin:.55rem 0 .2rem}
 #sbox.set .note{font-size:1rem}
 #sbox.set input,#sbox.set select{font-size:1.05rem;min-height:2.9rem;margin:.1rem 0;border-radius:.8rem}
 #sbox.set .pb{min-height:2.9rem;font-size:1.05rem;margin:.15rem .3rem .15rem 0}
@@ -148,8 +148,8 @@ button{font-family:inherit;color:inherit;border:0;background:none;padding:0;text
 .pmsg{min-height:1.5rem;color:var(--err);font-size:1rem;margin-top:.3rem}
 .rcode{font-weight:700;font-size:1.8rem;letter-spacing:.06em;text-align:center;background:var(--bg);border-radius:1rem;padding:.9rem .4rem;margin:.6rem 0;-webkit-user-select:all;user-select:all}
 .crow{display:flex;align-items:center;gap:.6rem}
-.crow span{width:3.6rem;flex:none;font-size:1rem;font-weight:700}
-.crow select{flex:1;width:auto}
+.crow span{flex:none;min-width:4.6rem;max-width:7rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:1rem;font-weight:700}
+.crow select{flex:1;width:auto;min-width:0}
 .dot.on{border-color:var(--fg)}
 .cele{text-align:center}.cele .big-cat{width:11rem;height:11rem;margin:0 auto}
 .cele h3{font-size:2rem}
@@ -784,7 +784,7 @@ function sheetSettings(setup){
   });
   h+='<div><button class="pb" data-act="addp">+ 아이 추가</button><button class="pb x" data-act="reset">기록 지우기</button></div>';
   h+=calSection();
-  h+='<div class="crow" style="margin-top:.7rem"><span style="width:5rem">날씨 도시</span><select data-f="city" aria-label="날씨 도시">';
+  h+='<div class="crow" style="margin-top:.45rem"><span style="width:5rem">날씨 도시</span><select data-f="city" aria-label="날씨 도시">';
   CITIES.forEach(function(c,i){h+='<option value="'+i+'"'+(ST.city===i?" selected":"")+'>'+c[0]+'</option>';});
   h+='</select></div>';
   return h+'</div><div class="sfoot"><button class="pb go" data-act="closeset">완료</button></div>';
