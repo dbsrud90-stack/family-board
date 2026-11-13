@@ -17,7 +17,7 @@
 :root{
   color-scheme:light dark;
   --bg:#faf6ef;--fg:#2a2420;--muted:#6f655b;--card:#ffffff;--soft:#f0e9de;--chip:#ffffff;
-  --ok:#23805a;--on-ok:#ffffff;--now:#e5484d;
+  --ok:#23805a;--on-ok:#ffffff;--now:#e5484d;--err:#b3261e;
   --font-n:"Jua","Noto Sans KR",sans-serif;
   --font-b:"Noto Sans KR","Apple SD Gothic Neo","Malgun Gothic",sans-serif;
 }
@@ -26,7 +26,7 @@
 .pal-pink{--c:#c93d74;--cs:#ffe1ec;--ci:#6b1236;--cf:#ffffff}
 .pal-green{--c:#1f7a52;--cs:#dcf5e8;--ci:#0f4a2e;--cf:#ffffff}
 @media (prefers-color-scheme: dark){
-  :root{--bg:#17130f;--fg:#f4efe7;--muted:#b4a99c;--card:#241e18;--soft:#3a3128;--chip:#17130f;--ok:#3ecf8e;--on-ok:#08301f;--now:#ff6b6f}
+  :root{--bg:#17130f;--fg:#f4efe7;--muted:#b4a99c;--card:#241e18;--soft:#3a3128;--chip:#17130f;--ok:#3ecf8e;--on-ok:#08301f;--now:#ff6b6f;--err:#ff8a8d}
   .pal-blue{--c:#5b8cff;--cs:#1f2f55;--ci:#cfe0ff;--cf:#0e1b3a}
   .pal-yellow{--c:#ffc93c;--cs:#4a3b12;--ci:#ffe9a8;--cf:#3b2900}
   .pal-pink{--c:#ff7fae;--cs:#4d2236;--ci:#ffd3e4;--cf:#3d0f23}
@@ -143,6 +143,10 @@ button{font-family:inherit;color:inherit;border:0;background:none;padding:0;text
 #sbox.set .dot{width:2.6rem;height:2.6rem}
 .prow2{flex:1 1 100%;display:flex;align-items:center;justify-content:space-between;gap:.5rem}
 .xbtn{width:3rem;height:3rem;border-radius:1rem;background:var(--bg);display:grid;place-items:center;font-size:1.5rem;flex:none}
+#sbox.set .pinput{font-size:1.8rem;letter-spacing:.35em;text-align:center;min-height:3.4rem}
+#sbox.set .pinput::placeholder{font-size:1.05rem;letter-spacing:0}
+.pmsg{min-height:1.5rem;color:var(--err);font-size:1rem;margin-top:.3rem}
+.rcode{font-weight:700;font-size:1.8rem;letter-spacing:.06em;text-align:center;background:var(--bg);border-radius:1rem;padding:.9rem .4rem;margin:.6rem 0;-webkit-user-select:all;user-select:all}
 .crow{display:flex;align-items:center;gap:.6rem}
 .crow span{width:3.6rem;flex:none;font-size:1rem;font-weight:700}
 .crow select{flex:1;width:auto}
@@ -785,16 +789,85 @@ function sheetSettings(setup){
   h+='</select></div>';
   return h+'</div><div class="sfoot"><button class="pb go" data-act="closeset">완료</button></div>';
 }
-function openSettings(setup){settingsOpen=true;openSheet(sheetSettings(setup));$("sbox").className="set";}
+var setupMode=false;
+function openSettings(setup){setupMode=!!setup;settingsOpen=true;openSheet(sheetSettings(setup));$("sbox").className="set";}
 function finishSettings(){
   ST.profiles.forEach(function(p){if(!p.name)p.name="우리 아이";});
   if(!cur())ST.current=ST.profiles[0].id;
   save();settingsOpen=false;closeSheet();userMoved=false;render();
+  if(setupMode&&!ST.lock){setupMode=false;showPinCreate("none");}
+  setupMode=false;
+}
+
+/* ---------- parent lock: 4-digit PIN + one-time recovery code (kept only as salted hashes on this device) ---------- */
+var pinMode="",pinAfter="none";
+function sha(s){
+  if(window.crypto&&crypto.subtle&&window.TextEncoder){
+    return crypto.subtle.digest("SHA-256",new TextEncoder().encode(s)).then(function(b){return Array.prototype.map.call(new Uint8Array(b),function(x){return ("0"+x.toString(16)).slice(-2);}).join("");});
+  }
+  var h=5381;for(var i=0;i<s.length;i++)h=((h<<5)+h+s.charCodeAt(i))|0;
+  return Promise.resolve("w"+(h>>>0).toString(16));
+}
+function rnd(n){var a=new Uint8Array(n);if(window.crypto&&crypto.getRandomValues)crypto.getRandomValues(a);else for(var i=0;i<n;i++)a[i]=Math.floor(Math.random()*256);return a;}
+function newSalt(){return Array.prototype.map.call(rnd(8),function(x){return ("0"+x.toString(16)).slice(-2);}).join("");}
+var RCH="ABCDEFGHJKMNPQRSTUVWXYZ23456789";
+function newRecovery(){var a=rnd(12),s="";for(var i=0;i<12;i++)s+=RCH.charAt(a[i]%RCH.length);return s;}
+function fmtRec(s){return s.replace(/(.{4})(?=.)/g,"$1-");}
+function normRec(s){return String(s).toUpperCase().replace(/[^A-Z0-9]/g,"");}
+function popup(title,body,foot,xact){
+  return '<div class="shead"><h3>'+title+'</h3><button class="xbtn" data-act="'+(xact||"close")+'" aria-label="닫기">'+ic("x")+'</button></div><div class="sbody">'+body+'</div>'+(foot?'<div class="sfoot">'+foot+'</div>':'');
+}
+function showPopup(html){settingsOpen=false;openSheet(html);$("sbox").className="set";}
+function focusLater(id){setTimeout(function(){var e=$(id);if(e)e.focus();},60);}
+function pmsg(t){var e=$("pinmsg");if(e)e.textContent=t;}
+function lockedMsg(){var L=ST.lockout,now=Date.now();return (L&&L.until>now)?"잠시 뒤에 다시 시도해 주세요 ("+Math.ceil((L.until-now)/1000)+"초)":"";}
+function failOnce(){
+  var n=((ST.lockout&&ST.lockout.n)||0)+1;
+  ST.lockout=n>=5?{n:0,until:Date.now()+30000}:{n:n,until:0};save();
+  return n>=5?"5번 틀렸어요. 30초 뒤에 다시 해 주세요.":"맞지 않아요. 다시 확인해 주세요 ("+n+"/5)";
+}
+var BTNW='style="width:100%;justify-content:center"';
+function requestSettings(){if(!ST.lock)showPinCreate("settings");else showPinEnter();}
+function showPinEnter(){
+  pinMode="enter";
+  showPopup(popup("부모 확인",'<div class="sub">설정은 부모만 바꿀 수 있어요. 암호 4자리를 입력해 주세요.</div><input id="pin" class="pinput" type="password" inputmode="numeric" pattern="[0-9]*" maxlength="4" autocomplete="off" aria-label="부모 암호"><div id="pinmsg" class="pmsg" role="alert"></div>','<button class="pb x" data-act="forgot" '+BTNW+'>암호를 잊었어요</button>'));
+  focusLater("pin");
+}
+function verifyPin(v){
+  var m=lockedMsg();if(m){pmsg(m);$("pin").value="";return;}
+  sha(ST.lock.salt+"|p|"+v).then(function(h){
+    if(h===ST.lock.p){ST.lockout=null;save();openSettings(false);}
+    else{pmsg(failOnce());var e=$("pin");if(e)e.value="";}
+  });
+}
+function showPinCreate(after,note){
+  pinMode="create";pinAfter=after;
+  showPopup(popup("부모 암호 만들기",'<div class="sub">'+(note||"아이가 설정을 바꾸지 못하게, 숫자 4자리 암호를 정해 주세요.")+'</div><input id="pin1" class="pinput" type="password" inputmode="numeric" pattern="[0-9]*" maxlength="4" autocomplete="off" placeholder="암호 4자리" aria-label="암호"><input id="pin2" class="pinput" type="password" inputmode="numeric" pattern="[0-9]*" maxlength="4" autocomplete="off" placeholder="한 번 더" aria-label="암호 확인"><div id="pinmsg" class="pmsg" role="alert"></div>','<button class="pb go" data-act="pincreate" data-default '+BTNW+'>다음</button>'));
+  focusLater("pin1");
+}
+function setLock(pin){
+  var salt=newSalt(),code=newRecovery();
+  return Promise.all([sha(salt+"|p|"+pin),sha(salt+"|r|"+code)]).then(function(h){ST.lock={salt:salt,p:h[0],r:h[1]};ST.lockout=null;save();return code;});
+}
+function showRecovery(code){
+  pinMode="";
+  showPopup(popup("복구 코드",'<div class="sub">암호를 잊었을 때 이 코드로 새 암호를 정할 수 있어요. <b>지금 한 번만</b> 보여 드려요. 화면을 캡처하거나 종이에 적어 두세요.</div><div class="rcode" id="rcode">'+fmtRec(code)+'</div><button class="pb" data-act="copyrec" data-code="'+code+'">복사하기</button><div id="pinmsg" class="pmsg" role="status"></div>','<button class="pb go" data-act="recdone" '+BTNW+'>적어뒀어요</button>',"recdone"));
+}
+function showForgot(){
+  pinMode="forgot";
+  showPopup(popup("암호 복구",'<div class="sub">암호를 만들 때 받은 복구 코드를 입력해 주세요.</div><input id="rec" class="pinput" style="font-size:1.4rem" type="text" maxlength="14" autocomplete="off" autocapitalize="characters" placeholder="XXXX-XXXX-XXXX" aria-label="복구 코드"><div id="pinmsg" class="pmsg" role="alert"></div>','<button class="pb go" data-act="recverify" data-default '+BTNW+'>확인</button><button class="pb x" data-act="wipe" '+BTNW+'>복구 코드도 없어요</button>'));
+  focusLater("rec");
+}
+function wipeAll(){
+  [KEY,GKEY,EVKEY,WKEY].forEach(function(k){try{localStorage.removeItem(k);}catch(e){}});
+  location.reload();
 }
 
 /* ---------- events ---------- */
 document.addEventListener("input",function(e){
-  var t=e.target;if(!t.getAttribute||!t.getAttribute("data-f"))return;
+  var t=e.target;
+  if(t.id==="pin"&&pinMode==="enter"&&t.value.length===4){verifyPin(t.value);return;}
+  if(!t.getAttribute||!t.getAttribute("data-f"))return;
   var f=t.getAttribute("data-f");
   if(f==="city"||f==="cal"){return;}
   var id=t.getAttribute("data-id");
@@ -830,7 +903,28 @@ document.addEventListener("click",function(e){
   else if(a==="cat"){openSheet(sheetCat());}
   else if(a==="quote"){openSheet(sheetQuote());}
   else if(a==="close"){closeSheet();}
-  else if(a==="settings"){openSettings(false);}
+  else if(a==="settings"){requestSettings();}
+  else if(a==="forgot"){showForgot();}
+  else if(a==="pincreate"){
+    var p1=$("pin1").value,p2v=$("pin2").value;
+    if(!/^\d{4}$/.test(p1)){pmsg("숫자 4자리를 입력해 주세요.");}
+    else if(p1!==p2v){pmsg("두 암호가 달라요. 다시 확인해 주세요.");}
+    else setLock(p1).then(showRecovery);
+  }
+  else if(a==="recverify"){
+    var lm=lockedMsg();
+    if(lm)pmsg(lm);
+    else sha(ST.lock.salt+"|r|"+normRec($("rec").value)).then(function(h){
+      if(h===ST.lock.r){ST.lockout=null;save();showPinCreate("settings","복구 코드를 확인했어요. 새 암호를 정해 주세요.");}
+      else pmsg(failOnce());
+    });
+  }
+  else if(a==="wipe"){if(confirm("복구 코드가 없으면 앱을 처음부터 다시 설정해야 해요.\n아이 정보, 도장 기록, 구글 연결이 모두 지워져요. 계속할까요?"))wipeAll();}
+  else if(a==="copyrec"){
+    var cd=el.getAttribute("data-code");
+    try{navigator.clipboard.writeText(fmtRec(cd)).then(function(){pmsg("복사했어요");},function(){pmsg("복사하지 못했어요. 직접 적어 두세요.");});}catch(er){pmsg("복사하지 못했어요. 직접 적어 두세요.");}
+  }
+  else if(a==="recdone"){if(pinAfter==="settings"){pinAfter="none";openSettings(false);}else closeSheet();}
   else if(a==="gconnect"||a==="greauth"){if(!gRequest(true))alert("구글 로그인을 준비하는 중이에요. 잠시 뒤 다시 눌러 주세요.");}
   else if(a==="gdisc"){if(confirm("구글 캘린더 연결을 끊고 샘플 일정으로 돌아갈까요?")){gDisconnect();render();if(settingsOpen)$("sbox").innerHTML=sheetSettings(false);}}
   else if(a==="closeset"){finishSettings();}
@@ -842,6 +936,7 @@ document.addEventListener("click",function(e){
 
 document.addEventListener("keydown",function(e){
   if(e.key==="Escape"&&$("sheet").classList.contains("show")){if(settingsOpen)finishSettings();else closeSheet();}
+  if(e.key==="Enter"&&e.target&&(e.target.id==="pin1"||e.target.id==="pin2"||e.target.id==="rec")){var b=document.querySelector("#sbox [data-default]");if(b)b.click();}
 });
 
 /* ---------- start ---------- */
