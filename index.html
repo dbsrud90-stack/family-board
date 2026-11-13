@@ -827,7 +827,7 @@ function sheetSettings(setup){
   if(setup)h+='<div class="sub">이 기기에서 볼 아이를 알려주세요. 패드라면 아이를 더 추가할 수 있어요.</div>';
   h+='<div class="sec">아이</div>';
   ST.profiles.forEach(function(p){
-    h+='<div class="prow"><input data-f="name" data-id="'+esc(p.id)+'" value="'+esc(p.name)+'" placeholder="이름" maxlength="10"><input data-f="grade" data-id="'+esc(p.id)+'" value="'+esc(p.grade)+'" placeholder="학년 (예: 2학년)" maxlength="8"><div class="prow2"><div class="dots">';
+    h+='<div class="prow"><input data-f="name" data-id="'+esc(p.id)+'" value="'+esc(p.name==="우리 아이"?"":p.name)+'" placeholder="아이 이름 (예: 채아)" maxlength="10"><input data-f="grade" data-id="'+esc(p.id)+'" value="'+esc(p.grade)+'" placeholder="학년 (예: 2학년)" maxlength="8"><div class="prow2"><div class="dots">';
     COLORS.forEach(function(c){h+='<button class="dot pal-'+c.id+(p.color===c.id?" on":"")+'" data-act="color" data-id="'+esc(p.id)+'" data-c="'+c.id+'" aria-label="'+c.l+'"></button>';});
     h+='</div>'+(ST.profiles.length>1?'<button class="pb x" data-act="delp" data-id="'+esc(p.id)+'">삭제</button>':'')+'</div></div>';
   });
