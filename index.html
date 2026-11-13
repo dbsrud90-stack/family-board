@@ -329,6 +329,15 @@ function merge(a,b){for(var k in b)a[k]=b[k];return a;}
 function save(){try{localStorage.setItem(KEY,JSON.stringify(ST));}catch(e){}}
 ST=load();
 function cur(){for(var i=0;i<ST.profiles.length;i++)if(ST.profiles[i].id===ST.current)return ST.profiles[i];return ST.profiles[0]||null;}
+function profileById(id){for(var i=0;i<ST.profiles.length;i++)if(ST.profiles[i].id===id)return ST.profiles[i];return null;}
+function profileOfKey(k){return profileById(String(k).split("_")[0]);}
+/* tablet/wide: any number of children can be shown side by side (tap a name to turn it on or off) */
+function shownList(){
+  var ids=ST.shown||[],out=ST.profiles.filter(function(q){return ids.indexOf(q.id)>=0;});
+  if(!out.length){var c=cur();if(c)out=[c];}
+  return out;
+}
+function isShown(id){return shownList().some(function(q){return q.id===id;});}
 function isOn(date,key){return !!(ST.checks[date]&&ST.checks[date][key]);}
 function stampCount(pid){var o=ST.stamps[pid]||{},n=0;for(var d in o)if(o[d])n++;return n;}
 function stageOf(n){var s=0;for(var i=0;i<STAGE.length;i++)if(n>=STAGE[i].at)s=i;return s;}
@@ -533,7 +542,7 @@ function markTabs(){
   var b=document.querySelectorAll("[data-act=jump]");
   for(var i=0;i<b.length;i++)b[i].classList.toggle("on",b[i].getAttribute("data-id")===id);
 }
-function setScroll(y){var t=document.querySelector(".tl"),ax=document.querySelector(".ax");if(t)t.scrollTop=y;if(ax)ax.scrollTop=y;}
+function setScroll(y){var ts=document.querySelectorAll(".tl"),ax=document.querySelector(".ax");for(var i=0;i<ts.length;i++){ts[i]._exp=y;ts[i].scrollTop=y;}if(ax)ax.scrollTop=y;}
 function scrollNow(smooth){
   var t=document.querySelector(".tl");if(!t)return;
   progScroll=true;if(smooth)userMoved=false;var y=nowTop();
@@ -549,10 +558,16 @@ function jumpTo(hr){
   clearTimeout(scrollT);scrollT=setTimeout(function(){scrollNow(true);},120000);
   setTimeout(function(){progScroll=false;markTabs();},900);
 }
+/* all columns and the hour axis scroll together; _exp marks a position we set ourselves so the echo event is ignored */
 function bindScroll(){
-  var t=document.querySelector(".tl");if(!t)return;
-  t.addEventListener("scroll",function(){
-    var ax=document.querySelector(".ax");if(ax)ax.scrollTop=t.scrollTop;
+  var ts=document.querySelectorAll(".tl");
+  for(var i=0;i<ts.length;i++)ts[i].addEventListener("scroll",function(){
+    var t=this,y=t.scrollTop;
+    if(t._exp!==undefined&&Math.abs(y-t._exp)<=2){markTabs();return;}
+    t._exp=undefined;
+    var all=document.querySelectorAll(".tl"),ax=document.querySelector(".ax");
+    for(var j=0;j<all.length;j++)if(all[j]!==t&&Math.abs(all[j].scrollTop-y)>1){all[j]._exp=y;all[j].scrollTop=y;}
+    if(ax)ax.scrollTop=y;
     markTabs();
     if(!progScroll){userMoved=true;clearTimeout(scrollT);scrollT=setTimeout(function(){scrollNow(true);},120000);}
   },{passive:true});
@@ -569,14 +584,20 @@ function layout(evs){
   return s;
 }
 function chipHtml(key,label,on){return '<span class="chipx'+(on?" on":"")+'" data-act="tick" data-key="'+esc(key)+'"><i>'+(on?ic("check"):"")+'</i>'+esc(label)+'</span>';}
-function boardHtml(p,now){
-  var date=dkey(now),nowMin=now.getHours()*60+now.getMinutes(),S0=DAY.s*60,E0=DAY.e*60,nh=DAY.e-DAY.s,D=dayOf(p),ev=layout(D.events);
-  var tt=totals(p,date),sg=stageOf(stampCount(p.id)),ex=stamped(p.id,date)?"happy":"normal";
-  var left=!tt.n?"":(tt.c===tt.n?'<span class="left done">오늘 도장 완료</span>':'<span class="left">'+(tt.n-tt.c)+'개 남았어요</span>');
+/* one hour axis, then one column per shown child */
+function boardHtml(list,now){
+  var nh=DAY.e-DAY.s;
   var h='<div class="axis"><div class="sp"></div><div class="ax"><div class="axi" style="height:'+(nh*PPH)+'rem">';
   for(var hh=Math.ceil(DAY.s);hh<DAY.e;hh++)h+='<span style="top:'+((hh-DAY.s)/nh*100)+'%">'+(hh%12||12)+'시</span>';
   h+='</div></div></div>';
-  h+='<div class="kcol"><button class="kh" data-act="cat"><span class="catx">'+catSVG(p.color,sg,ex)+'</span><span class="nm">'+esc(p.name||"우리 아이")+'<small>'+esc(p.grade||"")+'</small></span>'+left+'</button>';
+  for(var i=0;i<list.length;i++)h+=colHtml(list[i],now);
+  return h;
+}
+function colHtml(p,now){
+  var date=dkey(now),S0=DAY.s*60,E0=DAY.e*60,nh=DAY.e-DAY.s,D=dayOf(p),ev=layout(D.events);
+  var tt=totals(p,date),sg=stageOf(stampCount(p.id)),ex=stamped(p.id,date)?"happy":"normal";
+  var left=!tt.n?"":(tt.c===tt.n?'<span class="left done">오늘 도장 완료</span>':'<span class="left">'+(tt.n-tt.c)+'개 남았어요</span>');
+  var h='<div class="kcol pal-'+p.color+'"><button class="kh" data-act="cat" data-p="'+esc(p.id)+'"><span class="catx">'+catSVG(p.color,sg,ex)+'</span><span class="nm">'+esc(p.name||"우리 아이")+'<small>'+esc(p.grade||"")+'</small></span>'+left+'</button>';
   h+='<div class="ad"><span class="al">오늘 할 일</span>';
   if(!D.allday.length)h+='<span class="al">없어요</span>';
   for(var a=0;a<D.allday.length;a++){var ak=p.id+"_"+D.allday[a].id+"_t";h+=chipHtml(ak,D.allday[a].title,isOn(date,ak));}
@@ -593,7 +614,7 @@ function blocksHtml(p,now,ev,S0,E0,nh){
     var cs=Math.max(s0,S0),ce=Math.min(e0,E0),top=(cs-S0)/(E0-S0)*100,hgt=Math.max(ce-cs,minMin())/(E0-S0)*100;
     var n=E.todos.length,c=0;for(var j=0;j<n;j++)if(isOn(date,p.id+"_"+E.id+"_"+j))c++;
     var cu=nowMin>=s0&&nowMin<e0,past=e0<=nowMin,ln=E.lanes||1,lf=(E.lane||0)*100/ln;
-    h+='<div class="b'+(cu?" now":"")+(past?" past":"")+(ln>1?" ln":"")+'" data-act="open" data-e="'+esc(E.id)+'" style="top:calc('+top+'% + .125rem);height:calc('+hgt+'% - .25rem);left:calc('+lf+'% + .5rem);width:calc('+(100/ln)+'% - 1rem)">'+
+    h+='<div class="b'+(cu?" now":"")+(past?" past":"")+(ln>1?" ln":"")+'" data-act="open" data-p="'+esc(p.id)+'" data-e="'+esc(E.id)+'" style="top:calc('+top+'% + .125rem);height:calc('+hgt+'% - .25rem);left:calc('+lf+'% + .5rem);width:calc('+(100/ln)+'% - 1rem)">'+
       '<div class="bt"><span class="tt">'+esc(E.title)+'</span><small>'+fmtS(s0)+'</small>'+(n?'<span class="pg'+(c===n?" ok":"")+'">'+c+'/'+n+'</span>':'')+'</div>';
     if(n){h+='<div class="tk">';for(j=0;j<n;j++)h+=chipHtml(p.id+"_"+E.id+"_"+j,E.todos[j].t,isOn(date,p.id+"_"+E.id+"_"+j));h+='</div>';}
     h+='</div>';
@@ -730,11 +751,12 @@ function render(){
   $("bar").innerHTML="";
   var old=document.querySelector(".tl"),keep=old?old.scrollTop:null;
   var w="";
-  if(ST.profiles.length>1)for(var i=0;i<ST.profiles.length;i++){var q=ST.profiles[i];w+='<button class="chipk pal-'+q.color+(q.id===p.id?" on":"")+'" data-act="pick" data-id="'+esc(q.id)+'">'+esc(q.name||"우리 아이")+'</button>';}
+  var shown=shownList();
+  if(ST.profiles.length>1)for(var i=0;i<ST.profiles.length;i++){var q=ST.profiles[i],on=isShown(q.id);w+='<button class="chipk pal-'+q.color+(on?" on":"")+'" data-act="pick" data-id="'+esc(q.id)+'" aria-pressed="'+(on?"true":"false")+'" title="눌러서 함께 보기">'+esc(q.name||"우리 아이")+'</button>';}
   w+='<button class="gear" data-act="settings" aria-label="설정">'+ic("gear")+'</button>';
   $("who").innerHTML=w;
   $("tabs").innerHTML='<button class="seg" data-act="jump" data-h="6" data-id="am">오전</button><button class="seg" data-act="jump" data-h="12" data-id="pm">오후</button><button class="seg" data-act="jump" data-h="18" data-id="ev">저녁</button><button class="seg live" data-act="gonow">지금으로</button><span class="sp"></span>'+calHint();
-  $("main").innerHTML='<div class="board">'+boardHtml(p,now)+'</div>'+sideHtml(now);
+  $("main").innerHTML='<div class="board">'+boardHtml(shown,now)+'</div>'+sideHtml(now);
   bindScroll();
   if(!userMoved||keep===null)scrollNow(false);else{progScroll=true;setScroll(keep);setTimeout(function(){progScroll=false;},150);}
   markTabs();fitBlocks();
@@ -753,8 +775,8 @@ function tick(){
 function openSheet(h){$("sbox").className="";$("sbox").innerHTML=h;$("sheet").classList.add("show");}
 function closeSheet(){$("sheet").classList.remove("show");$("sbox").className="";}
 var settingsOpen=false;
-function sheetBlock(eid){
-  var p=cur(),D=dayOf(p),e=null,date=dkey(new Date());
+function sheetBlock(eid,pid){
+  var p=profileById(pid)||cur(),D=dayOf(p),e=null,date=dkey(new Date());
   for(var q=0;q<D.events.length;q++)if(D.events[q].id===eid)e=D.events[q];
   if(!e)return '<h3>일정을 찾지 못했어요</h3><div><button class="pb x" data-act="close">닫기</button></div>';
   var h='<h3>'+esc(e.title)+'</h3><div class="sub">'+fmt(e.start)+" ~ "+fmt(e.end>=1440?1439:e.end)+'</div>';
@@ -766,8 +788,8 @@ function sheetCele(c,p){
   var up=c.to>c.from;
   return '<div class="cele pal-'+p.color+'"><div class="big-cat">'+catSVG(p.color,c.to,"happy")+'</div><h3>'+(up?(c.to===1?"알에서 깨어났어요!":"고양이가 자랐어요!"):"오늘 도장 쾅!")+'</h3><div class="sub">'+esc(p.name)+'의 '+STAGE[c.to].n+(up?'':' · 할 일을 모두 끝냈어요')+'</div><button class="pb go" data-act="close">야호!</button></div>';
 }
-function sheetCat(){
-  var p=cur(),n=stampCount(p.id),sg=stageOf(n),now=new Date(),date=dkey(now);
+function sheetCat(pid){
+  var p=profileById(pid)||cur(),n=stampCount(p.id),sg=stageOf(n),now=new Date(),date=dkey(now);
   var h='<div class="cele pal-'+p.color+'"><div class="big-cat">'+catSVG(p.color,sg,stamped(p.id,date)?"happy":"normal")+'</div><h3>'+esc(p.name)+'의 '+STAGE[sg].n+'</h3><div class="sub">도장 '+n+'개</div>';
   if(sg<STAGE.length-1){var a=STAGE[sg].at,b=STAGE[sg+1].at;h+='<div class="sub">다음 모습 「'+STAGE[sg+1].n+'」까지 '+(b-n)+'개</div><div class="pbar"><span style="width:'+Math.round((n-a)/(b-a)*100)+'%"></span></div>';}
   else h+='<div class="sub">가장 멋진 모습이에요!</div>';
@@ -900,14 +922,26 @@ document.addEventListener("click",function(e){
   else if(a==="tab"){TAB=el.getAttribute("data-t");needScroll=(TAB==="today");render();if(TAB!=="today")window.scrollTo(0,0);}
   else if(a==="whoami"){openSheet(sheetWho());}
   else if(a==="jump"){jumpTo(+el.getAttribute("data-h"));}
-  else if(a==="pick"){ST.current=el.getAttribute("data-id");save();userMoved=false;needScroll=true;closeSheet();render();}
-  else if(a==="tick"){
-    e.stopPropagation();var cele=toggle(p,date,el.getAttribute("data-key"));render();
-    if(cele)openSheet(sheetCele(cele,p));
-    else{var sh=el.getAttribute("data-sheet");if(sh&&$("sheet").classList.contains("show"))$("sbox").innerHTML=sheetBlock(sh);}
+  else if(a==="pick"){
+    var pid2=el.getAttribute("data-id");
+    if(isPhone()){ST.current=pid2;ST.shown=[pid2];}
+    else{
+      var shl=shownList().map(function(q){return q.id;}),ix=shl.indexOf(pid2);
+      if(ix>=0){if(shl.length>1)shl.splice(ix,1);}else shl.push(pid2);
+      ST.shown=ST.profiles.filter(function(q){return shl.indexOf(q.id)>=0;}).map(function(q){return q.id;});
+      ST.current=ST.shown.indexOf(pid2)>=0?pid2:ST.shown[0];
+    }
+    save();userMoved=false;needScroll=true;closeSheet();render();
   }
-  else if(a==="open"){openSheet(sheetBlock(el.getAttribute("data-e")));}
-  else if(a==="cat"){openSheet(sheetCat());}
+  else if(a==="tick"){
+    e.stopPropagation();
+    var tkey=el.getAttribute("data-key"),tp=profileOfKey(tkey)||p;
+    var cele=toggle(tp,date,tkey);render();
+    if(cele)openSheet(sheetCele(cele,tp));
+    else{var sh=el.getAttribute("data-sheet");if(sh&&$("sheet").classList.contains("show"))$("sbox").innerHTML=sheetBlock(sh,tp.id);}
+  }
+  else if(a==="open"){openSheet(sheetBlock(el.getAttribute("data-e"),el.getAttribute("data-p")));}
+  else if(a==="cat"){openSheet(sheetCat(el.getAttribute("data-p")));}
   else if(a==="quote"){openSheet(sheetQuote());}
   else if(a==="close"){closeSheet();}
   else if(a==="settings"){requestSettings();}
@@ -937,7 +971,7 @@ document.addEventListener("click",function(e){
   else if(a==="closeset"){finishSettings();}
   else if(a==="color"){var pid=el.getAttribute("data-id");for(var i=0;i<ST.profiles.length;i++)if(ST.profiles[i].id===pid)ST.profiles[i].color=el.getAttribute("data-c");save();render();$("sbox").innerHTML=sheetSettings(false);}
   else if(a==="addp"){var np={id:uid(),name:"",grade:"",color:COLORS[ST.profiles.length%COLORS.length].id};ST.profiles.push(np);save();$("sbox").innerHTML=sheetSettings(false);}
-  else if(a==="delp"){var did=el.getAttribute("data-id");if(ST.profiles.length>1&&confirm("이 아이를 지울까요?")){ST.profiles=ST.profiles.filter(function(q){return q.id!==did;});if(ST.current===did)ST.current=ST.profiles[0].id;save();render();$("sbox").innerHTML=sheetSettings(false);}}
+  else if(a==="delp"){var did=el.getAttribute("data-id");if(ST.profiles.length>1&&confirm("이 아이를 지울까요?")){ST.profiles=ST.profiles.filter(function(q){return q.id!==did;});ST.shown=(ST.shown||[]).filter(function(x){return x!==did;});if(ST.current===did)ST.current=ST.profiles[0].id;save();render();$("sbox").innerHTML=sheetSettings(false);}}
   else if(a==="reset"){if(confirm("도장과 체크 기록을 모두 지울까요?")){ST.checks={};ST.stamps={};save();render();}}
 });
 
