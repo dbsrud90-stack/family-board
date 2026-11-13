@@ -1,0 +1,12 @@
+{
+  "name": "우리 아이 시간표",
+  "short_name": "시간표",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#faf6ef",
+  "theme_color": "#faf6ef",
+  "lang": "ko",
+  "icons": [
+    { "src": "icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }
+  ]
+}
