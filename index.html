@@ -126,6 +126,26 @@ button{font-family:inherit;color:inherit;border:0;background:none;padding:0;text
 .prow input{flex:1 1 8rem;width:auto;background:var(--card)}
 .dots{display:flex;gap:.5rem;align-items:center}
 .dot{width:2.5rem;height:2.5rem;border-radius:50%;background:var(--c);border:.2rem solid transparent}
+/* settings popup: compact, with a fixed header (X) and a fixed footer (done) */
+#sbox.set{display:flex;flex-direction:column;padding:0;overflow:hidden;width:min(34rem,100%);max-height:min(100%,46rem)}
+#sbox.set .shead{display:flex;align-items:center;gap:.5rem;padding:.9rem .9rem .3rem 1.2rem;flex:none}
+#sbox.set .shead h3{margin:0;font-size:1.5rem;flex:1}
+#sbox.set .sbody{flex:1;min-height:0;overflow:auto;padding:0 1.2rem .4rem}
+#sbox.set .sfoot{flex:none;padding:.6rem 1.2rem .9rem;border-top:1px solid var(--soft)}
+#sbox.set .sfoot .pb{width:100%;justify-content:center;margin:0}
+#sbox.set .sub{font-size:1rem;margin:0 0 .3rem}
+#sbox.set .sec{font-size:1.05rem;margin:.7rem 0 .25rem}
+#sbox.set .note{font-size:1rem}
+#sbox.set input,#sbox.set select{font-size:1.05rem;min-height:2.9rem;margin:.1rem 0;border-radius:.8rem}
+#sbox.set .pb{min-height:2.9rem;font-size:1.05rem;margin:.15rem .3rem .15rem 0}
+#sbox.set .prow{padding:.45rem;margin-bottom:.35rem;gap:.3rem}
+#sbox.set .prow input{flex:1 1 40%}
+#sbox.set .dot{width:2.6rem;height:2.6rem}
+.prow2{flex:1 1 100%;display:flex;align-items:center;justify-content:space-between;gap:.5rem}
+.xbtn{width:3rem;height:3rem;border-radius:1rem;background:var(--bg);display:grid;place-items:center;font-size:1.5rem;flex:none}
+.crow{display:flex;align-items:center;gap:.6rem}
+.crow span{width:3.6rem;flex:none;font-size:1rem;font-weight:700}
+.crow select{flex:1;width:auto}
 .dot.on{border-color:var(--fg)}
 .cele{text-align:center}.cele .big-cat{width:11rem;height:11rem;margin:0 auto}
 .cele h3{font-size:2rem}
@@ -207,6 +227,7 @@ button{font-family:inherit;color:inherit;border:0;background:none;padding:0;text
  <symbol id="i-cloud" viewBox="0 0 24 24"><path d="M18 10h-1.3A7 7 0 1 0 4 15.3 4.5 4.5 0 0 0 6.5 20H18a5 5 0 0 0 0-10z"/></symbol>
  <symbol id="i-snow" viewBox="0 0 24 24"><path d="M12 2v20M4.2 7l15.6 10M19.8 7L4.2 17"/></symbol>
  <symbol id="i-rain" viewBox="0 0 24 24"><path d="M20 16.6A5 5 0 0 0 18 7h-1.3A8 8 0 1 0 4 15.3"/><path d="M8 19v2M8 13v2M16 19v2M16 13v2M12 15v2M12 21v2"/></symbol>
+ <symbol id="i-x" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></symbol>
  <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></symbol>
  <symbol id="i-list" viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h10"/></symbol>
  <symbol id="i-paw" viewBox="0 0 24 24"><circle cx="6.5" cy="10" r="1.8"/><circle cx="10.5" cy="6.5" r="1.8"/><circle cx="14.5" cy="6.5" r="1.8"/><circle cx="18" cy="10" r="1.8"/><path d="M12 11.5c-3 0-5 2.6-5 4.6 0 1.5 1.4 2.4 2.9 2.4 1 0 1.4-.5 2.1-.5s1.1.5 2.1.5c1.5 0 2.9-.9 2.9-2.4 0-2-2-4.6-5-4.6z"/></symbol>
@@ -484,9 +505,9 @@ function calSection(){
   if(!G.connected)return h+'<div class="note">구글 계정을 연결하면 아이별 캘린더의 일정이 나와요. 일정은 읽기만 하고 바꾸지 않아요.</div><button class="pb go" data-act="gconnect">구글 캘린더 연결</button>';
   if(!G.cals)return h+'<div class="note">'+(G.need?"연결이 끊겼어요. 아래 버튼으로 다시 연결해 주세요.":"캘린더를 불러오는 중이에요…")+'</div>'+(G.need?'<button class="pb go" data-act="greauth">구글 다시 연결</button>':'')+'<button class="pb x" data-act="gdisc">연결 끊기</button>';
   ST.profiles.forEach(function(p){
-    h+='<div class="note" style="margin-top:.4rem">'+esc(p.name||"우리 아이")+'의 캘린더</div><select data-f="cal" data-id="'+esc(p.id)+'"><option value="">샘플 일정</option>';
+    h+='<div class="crow"><span>'+esc(p.name||"우리 아이")+'</span><select data-f="cal" data-id="'+esc(p.id)+'" aria-label="'+esc(p.name||"우리 아이")+'의 캘린더"><option value="">샘플 일정</option>';
     G.cals.forEach(function(c){h+='<option value="'+esc(c.id)+'"'+(p.cal&&p.cal.id===c.id?" selected":"")+'>'+esc(c.name)+'</option>';});
-    h+='</select>';
+    h+='</select></div>';
   });
   return h+'<div style="margin-top:.4rem"><button class="pb x" data-act="gdisc">연결 끊기</button></div>';
 }
@@ -718,8 +739,8 @@ function tick(){
 }
 
 /* ---------- sheets ---------- */
-function openSheet(h){$("sbox").innerHTML=h;$("sheet").classList.add("show");}
-function closeSheet(){$("sheet").classList.remove("show");}
+function openSheet(h){$("sbox").className="";$("sbox").innerHTML=h;$("sheet").classList.add("show");}
+function closeSheet(){$("sheet").classList.remove("show");$("sbox").className="";}
 var settingsOpen=false;
 function sheetBlock(eid){
   var p=cur(),D=dayOf(p),e=null,date=dkey(new Date());
@@ -749,22 +770,22 @@ function sheetQuote(){
   return '<h3>오늘의 명언</h3><div style="font-family:var(--font-n);font-size:2.25rem;line-height:1.35;margin:.6rem 0">'+q.t.split("\n").map(esc).join("<br>")+'</div><div class="sub">— '+esc(q.a)+'</div><div style="font-size:1.4rem;font-weight:500;background:var(--bg);border-radius:1rem;padding:.75rem 1rem;margin:.5rem 0 1rem">'+esc(q.m)+'</div><div><button class="pb x" data-act="close">닫기</button></div>';
 }
 function sheetSettings(setup){
-  var h='<h3>'+(setup?"처음 설정":"설정")+'</h3>';
-  h+='<div class="sub">'+(setup?"이 기기에서 볼 아이를 알려주세요. 패드라면 아이를 더 추가할 수 있어요.":"아이 정보와 색을 바꿀 수 있어요.")+'</div>';
+  var h='<div class="shead"><h3>'+(setup?"처음 설정":"설정")+'</h3><button class="xbtn" data-act="closeset" aria-label="닫기">'+ic("x")+'</button></div><div class="sbody">';
+  if(setup)h+='<div class="sub">이 기기에서 볼 아이를 알려주세요. 패드라면 아이를 더 추가할 수 있어요.</div>';
   h+='<div class="sec">아이</div>';
   ST.profiles.forEach(function(p){
-    h+='<div class="prow"><input data-f="name" data-id="'+esc(p.id)+'" value="'+esc(p.name)+'" placeholder="이름" maxlength="10"><input data-f="grade" data-id="'+esc(p.id)+'" value="'+esc(p.grade)+'" placeholder="학년 (예: 2학년)" maxlength="8"><div class="dots">';
+    h+='<div class="prow"><input data-f="name" data-id="'+esc(p.id)+'" value="'+esc(p.name)+'" placeholder="이름" maxlength="10"><input data-f="grade" data-id="'+esc(p.id)+'" value="'+esc(p.grade)+'" placeholder="학년 (예: 2학년)" maxlength="8"><div class="prow2"><div class="dots">';
     COLORS.forEach(function(c){h+='<button class="dot pal-'+c.id+(p.color===c.id?" on":"")+'" data-act="color" data-id="'+esc(p.id)+'" data-c="'+c.id+'" aria-label="'+c.l+'"></button>';});
-    h+='</div>'+(ST.profiles.length>1?'<button class="pb x" data-act="delp" data-id="'+esc(p.id)+'">삭제</button>':'')+'</div>';
+    h+='</div>'+(ST.profiles.length>1?'<button class="pb x" data-act="delp" data-id="'+esc(p.id)+'">삭제</button>':'')+'</div></div>';
   });
-  h+='<button class="pb" data-act="addp">+ 아이 추가</button>';
+  h+='<div><button class="pb" data-act="addp">+ 아이 추가</button><button class="pb x" data-act="reset">기록 지우기</button></div>';
   h+=calSection();
-  h+='<div class="sec">날씨 도시</div><select data-f="city">';
+  h+='<div class="crow" style="margin-top:.7rem"><span style="width:5rem">날씨 도시</span><select data-f="city" aria-label="날씨 도시">';
   CITIES.forEach(function(c,i){h+='<option value="'+i+'"'+(ST.city===i?" selected":"")+'>'+c[0]+'</option>';});
-  h+='</select><div class="sec">기록</div><button class="pb x" data-act="reset">도장·체크 기록 지우기</button>';
-  return h+'<div style="margin-top:.5rem"><button class="pb go" data-act="closeset">완료</button></div>';
+  h+='</select></div>';
+  return h+'</div><div class="sfoot"><button class="pb go" data-act="closeset">완료</button></div>';
 }
-function openSettings(setup){settingsOpen=true;openSheet(sheetSettings(setup));}
+function openSettings(setup){settingsOpen=true;openSheet(sheetSettings(setup));$("sbox").className="set";}
 function finishSettings(){
   ST.profiles.forEach(function(p){if(!p.name)p.name="우리 아이";});
   if(!cur())ST.current=ST.profiles[0].id;
@@ -817,6 +838,10 @@ document.addEventListener("click",function(e){
   else if(a==="addp"){var np={id:uid(),name:"",grade:"",color:COLORS[ST.profiles.length%COLORS.length].id};ST.profiles.push(np);save();$("sbox").innerHTML=sheetSettings(false);}
   else if(a==="delp"){var did=el.getAttribute("data-id");if(ST.profiles.length>1&&confirm("이 아이를 지울까요?")){ST.profiles=ST.profiles.filter(function(q){return q.id!==did;});if(ST.current===did)ST.current=ST.profiles[0].id;save();render();$("sbox").innerHTML=sheetSettings(false);}}
   else if(a==="reset"){if(confirm("도장과 체크 기록을 모두 지울까요?")){ST.checks={};ST.stamps={};save();render();}}
+});
+
+document.addEventListener("keydown",function(e){
+  if(e.key==="Escape"&&$("sheet").classList.contains("show")){if(settingsOpen)finishSettings();else closeSheet();}
 });
 
 /* ---------- start ---------- */
