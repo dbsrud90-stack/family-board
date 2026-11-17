@@ -62,7 +62,8 @@ button{font-family:inherit;color:inherit;border:0;background:none;padding:0;text
 .dsw button.on{background:var(--fg);color:var(--bg)}
 .ro{cursor:default}
 :focus-visible{outline:.2rem solid var(--fg);outline-offset:.15rem;box-shadow:0 0 0 .4rem var(--bg)}
-.b:focus-visible,.ad :focus-visible,.side :focus-visible{outline-offset:-.2rem}
+.b:focus-visible,.ad :focus-visible,.side :focus-visible,.b .bt:focus-visible{outline-offset:-.2rem}
+.b.now .bt:focus-visible{outline-color:var(--cf)}
 #calh .hint{font-size:.8125rem;color:var(--muted);white-space:nowrap}
 #calh .seg{height:1.75rem;padding:0 .7rem;font-size:.875rem;border-radius:.6rem}
 .seg{height:2.5rem;padding:0 1.25rem;border-radius:.9rem;background:var(--card);font-size:1.125rem;font-weight:500;display:flex;align-items:center;gap:.5rem}
@@ -92,7 +93,7 @@ button{font-family:inherit;color:inherit;border:0;background:none;padding:0;text
 .tl::-webkit-scrollbar{display:none}
 .tli{position:relative;width:100%}
 .tl .gl{position:absolute;left:0;right:0;border-top:.125rem solid var(--soft)}
-.chipx{background:var(--chip);color:var(--fg);border-radius:.75rem;min-height:3rem;padding:.2rem .75rem .2rem .45rem;font-size:1.125rem;font-weight:500;display:inline-flex;gap:.5rem;align-items:center;cursor:pointer;line-height:1.3}
+.chipx{background:var(--chip);color:var(--fg);border-radius:.75rem;min-height:2.75rem;padding:.2rem .75rem .2rem .45rem;font-size:1.125rem;font-weight:500;display:inline-flex;gap:.5rem;align-items:center;cursor:pointer;line-height:1.3}
 .chipx i{width:1.4rem;height:1.4rem;border-radius:.45rem;border:.125rem solid var(--muted);display:grid;place-items:center;font-style:normal;color:var(--on-ok);font-size:1rem;flex:none}
 .chipx.on{text-decoration:line-through;color:var(--muted)}.chipx.on i{background:var(--ok);border-color:var(--ok)}
 .b{position:absolute;min-height:2.4rem;border-radius:.9rem;padding:.3rem .75rem;overflow:hidden;overflow:clip;cursor:pointer;display:block;background:var(--cs);color:var(--ci)}
@@ -284,7 +285,7 @@ button{font-family:inherit;color:inherit;border:0;background:none;padding:0;text
   <div id="main"></div>
 </div>
 <nav id="bar" aria-label="화면 이동"></nav>
-<div id="sheet"><div id="sbox"></div></div>
+<div id="sheet" role="dialog" aria-modal="true" aria-label="알림창"><div id="sbox"></div></div>
 
 <script>
 (function(){
@@ -377,6 +378,14 @@ function stampCount(pid){var o=ST.stamps[pid]||{},n=0;for(var d in o)if(o[d])n++
 function stageOf(n){var s=0;for(var i=0;i<STAGE.length;i++)if(n>=STAGE[i].at)s=i;return s;}
 function stamped(pid,date){return !!(ST.stamps[pid]&&ST.stamps[pid][date]);}
 function kidKeys(p){var D=dayOf(p),keys=[],i,j;for(i=0;i<D.allday.length;i++)keys.push(p.id+"_"+D.allday[i].id+"_t");for(i=0;i<D.events.length;i++){if(D.events[i].end<=DAY.s*60||D.events[i].start>=DAY.e*60)continue;for(j=0;j<D.events[i].todos.length;j++)keys.push(p.id+"_"+D.events[i].id+"_"+j);}var pl=prepList(p);for(i=0;i<pl.length;i++)keys.push(p.id+"_prep_"+pl[i]);return keys;}
+/* names of today's items still unticked (visible window, all-day, prep) */
+function leftLabels(p,date){
+  var D=dayOf(p),out=[],i,j,k,pl=prepList(p);
+  for(i=0;i<D.allday.length;i++){k=p.id+"_"+D.allday[i].id+"_t";if(!isOn(date,k))out.push(D.allday[i].title);}
+  for(i=0;i<D.events.length;i++){if(D.events[i].end<=DAY.s*60||D.events[i].start>=DAY.e*60)continue;for(j=0;j<D.events[i].todos.length;j++){k=p.id+"_"+D.events[i].id+"_"+j;if(!isOn(date,k))out.push(D.events[i].todos[j].t);}}
+  for(i=0;i<pl.length;i++){k=p.id+"_prep_"+pl[i];if(!isOn(date,k))out.push(pl[i]);}
+  return out;
+}
 /* tomorrow's items marked "준비물:" (deduped); ticking them counts toward today's stamp */
 function prepList(p){var D=dayOf(p,1),seen={},out=[];D.events.forEach(function(e){e.todos.forEach(function(t){if(t.prep&&!seen[t.t]){seen[t.t]=1;out.push(t.t);}});});return out;}
 function totals(p,date){var ks=kidKeys(p),c=0;for(var i=0;i<ks.length;i++)if(isOn(date,ks[i]))c++;return {n:ks.length,c:c};}
@@ -671,8 +680,8 @@ function blocksHtml(p,now,ev,S0,E0,nh){
     var cs=Math.max(s0,S0),ce=Math.min(e0,E0),top=(cs-S0)/(E0-S0)*100,hgt=Math.max(ce-cs,minMin())/(E0-S0)*100;
     var n=E.todos.length,c=0;for(var j=0;j<n;j++)if(isOn(date,p.id+"_"+E.id+"_"+j))c++;
     var cu=nowMin>=s0&&nowMin<e0,past=e0<=nowMin,ln=E.lanes||1,lf=(E.lane||0)*100/ln;
-    h+='<div class="b'+(cu?" now":"")+(past?" past":"")+(ln>1?" ln":"")+'" role="button" tabindex="0" data-act="open" data-p="'+esc(p.id)+'" data-e="'+esc(E.id)+'" style="top:calc('+top+'% + .125rem);height:calc('+hgt+'% - .25rem);left:calc('+lf+'% + .5rem);width:calc('+(100/ln)+'% - 1rem)">'+
-      '<div class="bt"><span class="tt">'+esc(E.title)+'</span><small>'+fmtS(s0)+'</small>'+(n?'<span class="pg'+(c===n?" ok":"")+'">'+c+'/'+n+'</span>':'')+'</div>';
+    h+='<div class="b'+(cu?" now":"")+(past?" past":"")+(ln>1?" ln":"")+'" data-act="open" data-p="'+esc(p.id)+'" data-e="'+esc(E.id)+'" style="top:calc('+top+'% + .125rem);height:calc('+hgt+'% - .25rem);left:calc('+lf+'% + .5rem);width:calc('+(100/ln)+'% - 1rem)">'+
+      '<div class="bt" role="button" tabindex="0" aria-label="'+esc(E.title)+' 자세히 보기"><span class="tt">'+esc(E.title)+'</span><small>'+fmtS(s0)+'</small>'+(n?'<span class="pg'+(c===n?" ok":"")+'">'+c+'/'+n+'</span>':'')+'</div>';
     if(n){h+='<div class="tk">';for(j=0;j<n;j++)h+=chipHtml(p.id+"_"+E.id+"_"+j,E.todos[j].t,isOn(date,p.id+"_"+E.id+"_"+j));h+='</div>';}
     h+='</div>';
   }
@@ -691,7 +700,7 @@ function sideHtml(now){
 function fitBlocks(){
   var root=rootPx(),bl=document.querySelectorAll(".b");
   for(var i=0;i<bl.length;i++){var b=bl[i],tk=b.querySelector(".tk"),pg=b.querySelector(".pg");if(!tk)continue;
-    var fits=b.clientHeight>=5.8*root;tk.style.display=fits?"flex":"none";if(pg)pg.style.display=fits?"none":"inline-block";
+    var fits=b.clientHeight>=3.2*root;tk.style.display=fits?"flex":"none";if(pg)pg.style.display=fits?"none":"inline-block";
     if(fits&&b.scrollHeight>b.clientHeight+2){tk.style.display="none";if(pg)pg.style.display="inline-block";}}
 }
 
@@ -717,9 +726,9 @@ function heroHtml(p,x,date){
     h+='<div class="htitle">'+esc(e.title)+'</div><div class="sub2">'+fmt(e.start)+" ~ "+fmt(e.end>=1440?1439:e.end)+'</div><div class="pbar2"><i style="width:'+pct+'%"></i></div><div class="rem">'+dur(left)+' 남았어요</div>';
     for(var j=0;j<e.todos.length;j++){var k=p.id+"_"+e.id+"_"+j;h+=todoRow(k,e.todos[j].t,isOn(date,k));}
   }else if(x.next){h+='<div class="hmsg">쉬는 시간</div><div class="rem">다음 일정까지 '+dur(x.next.start-x.m)+'</div>';}
-  else if(!x.D.events.length&&p.cal&&(G.need||!EV[p.id])){h+='<div class="hmsg">일정을 아직 못 불러왔어요</div><div class="sub2">엄마·아빠에게 알려 주세요</div>';}
+  else if(!x.D.events.length&&p.cal&&!EV[p.id]){h+='<div class="hmsg">일정을 아직 못 불러왔어요</div><div class="sub2">엄마·아빠에게 알려 주세요</div>';}
   else if(!x.D.events.length){h+='<div class="hmsg">'+(VIEW?"내일은":"오늘은")+' 일정이 없어요</div>';}
-  else{h+='<div class="hmsg">오늘 일정이 모두 끝났어요</div><div class="sub2">수고했어요'+(function(){var t=totals(p,date);return (t.n>t.c&&!stamped(p.id,date))?' · 못 한 할 일 '+(t.n-t.c)+'개가 있어요 (오늘 탭에서 봐요)':'';})()+'</div>';}
+  else{h+='<div class="hmsg">오늘 일정이 모두 끝났어요</div><div class="sub2">수고했어요'+(function(){if(stamped(p.id,date))return '';var l=leftLabels(p,date);return l.length?' · 아직 못 한 것: '+l.slice(0,2).map(esc).join(", ")+(l.length>2?" 외 "+(l.length-2)+"개":""):'';})()+'</div>';}
   return h+'</div>';
 }
 function nextHtml(x){
@@ -755,19 +764,20 @@ function infoHtml(now){
 function calNotice(p){
   if(!p.cal)return '';
   var d=(VIEW?EVN:EV)[p.id];
-  if(G.need||(!d&&!G.token))return '<div class="card"><div class="cl">'+(d?"저장해 둔 일정을 보여주고 있어요":"일정을 불러오지 못했어요")+'</div><div class="sdt">엄마·아빠가 설정에서 구글 캘린더를 다시 연결하면 최신 일정으로 바뀌어요.</div><button class="pb" data-act="settings">어른 전용 · 설정 열기</button></div>';
+  if(d&&!(G.need&&!G.token&&(d.updated||0)<Date.now()-86400000))return ''; /* saved events exist: keep it quiet for the child */
+  if(G.need||(!d&&!G.token))return '<div class="card"><div class="cl">일정을 불러오지 못했어요</div><div class="sdt">엄마·아빠에게 알려 주세요. (어른은 위쪽 톱니바퀴 설정에서 구글 캘린더를 다시 연결해요)</div></div>';
   if(!d)return '<div class="card"><div class="sdt">일정을 불러오는 중이에요…</div></div>';
   return '';
 }
 function nowScreen(p,now){
   var x=curNext(p,now),date=dkey(now);
-  return calNotice(p)+heroHtml(p,x,date)+alldayCard(p,x.D,date)+nextHtml(x)+(now.getHours()>=17?prepCard(p,now):'')+infoHtml(now)+'<div class="hintrow">'+calHint()+'</div>';
+  return calNotice(p)+(!p.cal?'<div class="card"><div class="sdt">지금은 예시 일정이에요. 엄마·아빠가 설정에서 구글 캘린더를 연결하면 진짜 일정이 나와요.</div></div>':'')+heroHtml(p,x,date)+alldayCard(p,x.D,date)+nextHtml(x)+(now.getHours()>=17?prepCard(p,now):'')+infoHtml(now)+'<div class="hintrow">'+calHint()+'</div>';
 }
 function todayScreen(p,now){
   var D=dayOf(p,VIEW),m=now.getHours()*60+now.getMinutes(),date=vkey(now),S0=DAY.s*60,E0=DAY.e*60,nh=DAY.e-DAY.s,total=D.events.length,done=0,vd=vday(now);
   D.events.forEach(function(e){if(e.end<=m)done++;});
   /* one sticky row: day switch + short summary (stays visible while the timeline scrolls) */
-  var sum=VIEW?(vd.getMonth()+1)+"월 "+vd.getDate()+"일 "+DOW[vd.getDay()]+"요일 · "+(total?total+"개":"일정 없어요"):(total?"일정 "+total+"개 중 "+done+"개 지났어요":(p.cal&&(G.need||!EV[p.id])?"일정을 아직 못 불러왔어요":"오늘은 일정이 없어요"));
+  var sum=VIEW?(vd.getMonth()+1)+"월 "+vd.getDate()+"일 "+DOW[vd.getDay()]+"요일 · "+(total?total+"개":"일정 없어요"):(total?"일정 "+total+"개 중 "+done+"개 지났어요":(p.cal&&!EV[p.id]?"일정을 아직 못 불러왔어요":"오늘은 일정이 없어요"));
   var h='<div class="dbar">'+daySw()+'<span class="dsum">'+sum+'</span></div>';
   h+=calNotice(p)+alldayCard(p,D,date,true);
   h+='<div class="ptl" style="height:'+(nh*PPH)+'rem"><div class="plab">';
@@ -780,7 +790,7 @@ function catScreen(p,now){
   var h='<div class="catcard"><div class="bigcat">'+catSVG(p.color,sg,stamped(p.id,date)?"happy":"normal")+'</div><div class="sh">'+esc(p.name)+'의 '+STAGE[sg].n+'</div><div class="sdt">도장 '+n+'개</div>';
   if(sg<STAGE.length-1){var a=STAGE[sg].at,b=STAGE[sg+1].at;h+='<div class="sdt">「'+STAGE[sg+1].n+'」까지 '+(b-n)+'개</div><div class="pbar"><span style="width:'+Math.round((n-a)/(b-a)*100)+'%"></span></div>';}
   else h+='<div class="sdt">가장 멋진 모습이에요!</div>';
-  h+='<div class="sdt">'+(tt.n?(stamped(p.id,date)||tt.c===tt.n?"오늘 할 일을 모두 했어요":"오늘 할 일 "+tt.n+"개 중 "+tt.c+"개 했어요"):"오늘은 할 일이 없어요")+'</div><button class="pb" data-act="share" data-p="'+esc(p.id)+'">엄마·아빠에게 알려요</button></div>';
+  h+='<div class="sdt">'+(tt.n?(stamped(p.id,date)||tt.c===tt.n?"오늘 할 일을 모두 했어요":"오늘 할 일 "+tt.n+"개 중 "+tt.c+"개 했어요"):"오늘은 할 일이 없어요")+'</div><button class="pb" data-act="share" data-p="'+esc(p.id)+'">엄마·아빠에게 보내기</button></div>';
   h+='<div class="card"><div class="cl">이번 달 도장</div><div class="stamps">';
   var dim=new Date(now.getFullYear(),now.getMonth()+1,0).getDate(),st=ST.stamps[p.id]||{};
   for(var d=1;d<=dim;d++){var key=now.getFullYear()+"-"+p2(now.getMonth()+1)+"-"+p2(d),on=!!st[key];h+='<span class="sd'+(on?" on":"")+(d===now.getDate()?" today":"")+'">'+(on?ic("check"):d)+'</span>';}
@@ -852,7 +862,8 @@ function tick(){
 }
 
 /* ---------- sheets ---------- */
-function openSheet(h){$("sbox").className="";$("sbox").innerHTML=h;$("sheet").classList.add("show");}
+function openSheet(h){$("sbox").className="";$("sbox").innerHTML=h;$("sheet").classList.add("show");
+  setTimeout(function(){var a=document.activeElement;if(a&&$("sbox").contains(a))return;var f=$("sbox").querySelector("input,button.big,button.pb,button");if(f)f.focus();},60);}
 function closeSheet(){$("sheet").classList.remove("show");$("sbox").className="";}
 var settingsOpen=false;
 function sheetBlock(eid,pid){
@@ -867,14 +878,18 @@ function sheetBlock(eid,pid){
 /* until the parent screen exists: the child taps once to send today's progress by any messenger (nothing leaves the device otherwise) */
 function shareToday(pid){
   var p=profileById(pid)||cur(),n=new Date(),dk=dkey(n),t=totals(p,dk);
+  if(!t.n){alert("오늘은 보낼 할 일이 없어요.");return;}
   var txt=(p.name||"우리 아이")+": 오늘 할 일 "+t.n+"개 중 "+t.c+"개 했어요 ("+fmt(n.getHours()*60+n.getMinutes())+" 기준)"+(stamped(p.id,dk)?" · 도장 받았어요":"");
-  if(navigator.share){navigator.share({text:txt}).catch(function(){});}
-  else if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(txt).then(function(){alert("복사했어요. 메신저에 붙여 넣어 보내 주세요.\n"+txt);}).catch(function(){prompt("아래 글을 복사해 보내 주세요",txt);});}
-  else prompt("아래 글을 복사해 보내 주세요",txt);
+  function copyIt(){
+    if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(txt).then(function(){alert("글을 복사했어요. 엄마·아빠에게 보내는 대화창에 붙여서 보내요.\n\n"+txt);}).catch(function(){prompt("아래 글을 길게 눌러 복사해서 보내요",txt);});}
+    else prompt("아래 글을 길게 눌러 복사해서 보내요",txt);
+  }
+  if(navigator.share){navigator.share({text:txt}).catch(function(er){if(!er||er.name!=="AbortError")copyIt();});}
+  else copyIt();
 }
 function sheetCele(c,p){
   var up=c.to>c.from;
-  return '<div class="cele pal-'+p.color+'"><div class="big-cat">'+catSVG(p.color,c.to,"happy")+'</div><h3>'+(up?(c.to===1?"알에서 깨어났어요!":"고양이가 자랐어요!"):"오늘 도장 쾅!")+'</h3><div class="sub">'+esc(p.name)+'의 '+STAGE[c.to].n+(up?'':' · 할 일을 모두 끝냈어요')+'</div><button class="pb" data-act="share" data-p="'+esc(p.id)+'">엄마·아빠에게 알려요</button><button class="pb go" data-act="close">야호!</button></div>';
+  return '<div class="cele pal-'+p.color+'"><div class="big-cat">'+catSVG(p.color,c.to,"happy")+'</div><h3>'+(up?(c.to===1?"알에서 깨어났어요!":"고양이가 자랐어요!"):"오늘 도장 쾅!")+'</h3><div class="sub">'+esc(p.name)+'의 '+STAGE[c.to].n+(up?'':' · 할 일을 모두 끝냈어요')+'</div><button class="pb" data-act="share" data-p="'+esc(p.id)+'">엄마·아빠에게 보내기</button><button class="pb go" data-act="close">야호!</button></div>';
 }
 function sheetCat(pid){
   var p=profileById(pid)||cur(),n=stampCount(p.id),sg=stageOf(n),now=new Date(),date=dkey(now);
@@ -892,7 +907,7 @@ function sheetQuote(){
 }
 function sheetSettings(setup){
   var h='<div class="shead"><h3>'+(setup?"처음 설정":"설정")+'</h3><button class="xbtn" data-act="closeset" aria-label="닫기">'+ic("x")+'</button></div><div class="sbody">';
-  if(setup)h+='<div class="sub">이 기기에서 볼 아이를 알려주세요. 패드라면 아이를 더 추가할 수 있어요.</div>';
+  if(setup)h+='<div class="sub">이 기기에서 볼 아이를 알려주세요. 패드라면 아이를 더 추가할 수 있어요.</div><div class="sub"><b>먼저 홈 화면에 추가해 주세요.</b> iPhone·iPad는 Safari의 공유 버튼 → 홈 화면에 추가, Android는 크롬 메뉴 → 홈 화면에 추가. 추가한 아이콘으로 열어서 설정하면 기록이 사라지지 않아요. 아이 기기마다 따로 설정해요.</div>';
   h+='<div class="sec">아이</div>';
   ST.profiles.forEach(function(p){
     h+='<div class="prow"><input data-f="name" data-id="'+esc(p.id)+'" value="'+esc(p.name==="우리 아이"?"":p.name)+'" placeholder="아이 이름 (예: 하늘)" maxlength="10"><input data-f="grade" data-id="'+esc(p.id)+'" value="'+esc(p.grade)+'" placeholder="학년 (예: 2학년)" maxlength="8"><div class="prow2"><div class="dots">';
@@ -1027,7 +1042,7 @@ document.addEventListener("click",function(e){
     if(VIEW)return; /* tomorrow is preview only */
     var tkey=el.getAttribute("data-key"),tp=profileOfKey(tkey)||p;
     var kb=document.activeElement===el,cele=toggle(tp,date,tkey);render();
-    if(kb){var all=document.querySelectorAll('[data-act="tick"]');for(var fi=0;fi<all.length;fi++)if(all[fi].getAttribute("data-key")===tkey){all[fi].focus();break;}}
+    if(kb&&!$("sheet").classList.contains("show")){var all=$("main").querySelectorAll('[data-act="tick"]');for(var fi=0;fi<all.length;fi++)if(all[fi].getAttribute("data-key")===tkey){all[fi].focus();break;}}
     if(cele)openSheet(sheetCele(cele,tp));
     else{var sh=el.getAttribute("data-sheet");if(sh&&$("sheet").classList.contains("show"))$("sbox").innerHTML=sheetBlock(sh,tp.id);}
   }
