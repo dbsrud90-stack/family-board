@@ -119,12 +119,6 @@ button{font-family:inherit;color:inherit;border:0;background:none;padding:0;text
 .qt .w{font-size:1.125rem;color:var(--muted);text-align:right}
 
 /* sheet */
-/* night standby: 22:00-05:00 dark clock, tap wakes it for 30 min after the last touch */
-#rest{position:fixed;inset:0;z-index:40;display:none;flex-direction:column;align-items:center;justify-content:center;gap:1rem;background:#0b0907;color:#9a8f83;cursor:pointer;text-align:center;padding:1rem}
-#rest.show{display:flex}
-#rest .rc{font-family:var(--font-n);font-size:6rem;line-height:1;color:#b9ad9f}
-#rest .rt{font-size:1.25rem}
-@media (max-width:700px){#rest .rc{font-size:5rem}#rest .rt{font-size:1.1rem}}
 #sheet{position:fixed;inset:0;display:none;align-items:center;justify-content:center;background:rgba(30,20,10,.5);z-index:20;padding:1rem}
 #sheet.show{display:flex}
 #sbox{background:var(--card);border-radius:1.75rem;padding:1.5rem;width:min(40rem,100%);max-height:100%;overflow:auto;-webkit-user-select:text;user-select:text}
@@ -289,7 +283,6 @@ button{font-family:inherit;color:inherit;border:0;background:none;padding:0;text
 </div>
 <nav id="bar" aria-label="화면 이동"></nav>
 <div id="sheet"><div id="sbox"></div></div>
-<div id="rest" role="button" tabindex="0" aria-label="화면 켜기"><div class="rc" id="rclock"></div><div class="rt">쉬는 시간이에요. 화면을 누르면 30분 동안 켜져요.</div></div>
 
 <script>
 (function(){
@@ -835,19 +828,8 @@ function render(){
   if(!userMoved||keep===null)scrollNow(false);else{progScroll=true;setScroll(keep);setTimeout(function(){progScroll=false;},150);}
   markTabs();fitBlocks();
 }
-var awakeUntil=0;
-function inRest(n){var h=n.getHours();return h>=22||h<5;}
-function updateRest(){
-  var n=new Date(),on=inRest(n)&&Date.now()>awakeUntil,r=$("rest");
-  if(on){var h=n.getHours(),h12=h%12||12;$("rclock").textContent=(h<12?"오전 ":"오후 ")+h12+":"+p2(n.getMinutes());}
-  r.classList.toggle("show",on);
-}
-document.addEventListener("pointerdown",function(){if(inRest(new Date())&&!$("rest").classList.contains("show"))awakeUntil=Date.now()+30*60000;},true);
-$("rest").addEventListener("click",function(){awakeUntil=Date.now()+30*60000;updateRest();});
-$("rest").addEventListener("keydown",function(e){if(e.key==="Enter"||e.key===" "){awakeUntil=Date.now()+30*60000;updateRest();}});
 var lastMin=-1,lastDay="";
 function tick(){
-  updateRest();
   var n=new Date(),h=n.getHours(),m=n.getMinutes(),s=n.getSeconds(),h12=h%12||12;
   $("clock").innerHTML='<small>'+(h<12?"오전":"오후")+'</small>'+h12+'<span class="co'+(s%2?" off":"")+'">:</span>'+p2(m);
   if(m!==lastMin){lastMin=m;
