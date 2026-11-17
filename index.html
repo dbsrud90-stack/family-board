@@ -108,6 +108,8 @@ button{font-family:inherit;color:inherit;border:0;background:none;padding:0;text
 
 /* side */
 .side{width:14.25rem;display:flex;flex-direction:column;gap:1.1rem;padding-top:.25rem;flex:none;overflow:hidden}
+.sprep{display:flex;flex-direction:column;gap:.35rem}.sprep .al{font-size:1.125rem;color:var(--muted)}
+.prepc{margin:.75rem 0 5rem}
 .wr{display:flex;align-items:center;gap:.75rem;font-size:1.25rem;font-weight:500;position:relative}
 .wr .ic{font-size:2.1rem;flex:none}.wr small{display:block;font-size:1.125rem;color:var(--muted);font-weight:400}
 .tag{font-size:1rem;background:var(--soft);color:var(--muted);border-radius:.5rem;padding:0 .4rem;margin-left:auto}
@@ -217,6 +219,7 @@ button{font-family:inherit;color:inherit;border:0;background:none;padding:0;text
   .hero{background:var(--c);color:var(--cf);border-radius:1.5rem;padding:1rem 1.1rem 1.1rem}
   .hero .lbl{font-size:1rem;font-weight:500}
   .hero .htitle{font-size:1.9rem;font-weight:700;line-height:1.2;margin:.15rem 0;overflow-wrap:anywhere}
+  .hero .hmsg{font-size:1.9rem;font-weight:700;line-height:1.2;margin:.15rem 0;word-break:keep-all;overflow-wrap:anywhere;color:var(--cf)}
   .hero .sub2{font-size:1.1rem}
   .pbar2{height:.7rem;border-radius:.35rem;background:rgba(128,128,128,.35);margin:.8rem 0 .45rem;overflow:hidden}
   .pbar2 i{display:block;height:100%;background:var(--cf);border-radius:.35rem}
@@ -370,7 +373,9 @@ function isOn(date,key){return !!(ST.checks[date]&&ST.checks[date][key]);}
 function stampCount(pid){var o=ST.stamps[pid]||{},n=0;for(var d in o)if(o[d])n++;return n;}
 function stageOf(n){var s=0;for(var i=0;i<STAGE.length;i++)if(n>=STAGE[i].at)s=i;return s;}
 function stamped(pid,date){return !!(ST.stamps[pid]&&ST.stamps[pid][date]);}
-function kidKeys(p){var D=dayOf(p),keys=[],i,j;for(i=0;i<D.allday.length;i++)keys.push(p.id+"_"+D.allday[i].id+"_t");for(i=0;i<D.events.length;i++)for(j=0;j<D.events[i].todos.length;j++)keys.push(p.id+"_"+D.events[i].id+"_"+j);return keys;}
+function kidKeys(p){var D=dayOf(p),keys=[],i,j;for(i=0;i<D.allday.length;i++)keys.push(p.id+"_"+D.allday[i].id+"_t");for(i=0;i<D.events.length;i++)for(j=0;j<D.events[i].todos.length;j++)keys.push(p.id+"_"+D.events[i].id+"_"+j);var pl=prepList(p);for(i=0;i<pl.length;i++)keys.push(p.id+"_prep_"+pl[i]);return keys;}
+/* tomorrow's items marked "준비물:" (deduped); ticking them counts toward today's stamp */
+function prepList(p){var D=dayOf(p,1),seen={},out=[];D.events.forEach(function(e){e.todos.forEach(function(t){if(t.prep&&!seen[t.t]){seen[t.t]=1;out.push(t.t);}});});return out;}
 function totals(p,date){var ks=kidKeys(p),c=0;for(var i=0;i<ks.length;i++)if(isOn(date,ks[i]))c++;return {n:ks.length,c:c};}
 function toggle(p,date,key){
   var before=stampCount(p.id),cele=null;
@@ -669,6 +674,7 @@ function sideHtml(now){
   var wv=weatherRows(now),h='<div class="side">';
   if(!wv.rows.length)h+='<div class="wr"><div>날씨<small>'+esc(wv.tag)+'</small></div></div>';
   for(var i=0;i<wv.rows.length;i++){var w=wv.rows[i];h+='<div class="wr">'+ic(w.i)+'<div>'+w.l+" "+w.t+'<small>'+esc(w.s)+'</small></div>'+(i===0?'<span class="tag">'+esc(wv.tag)+'</span>':"")+'</div>';}
+  if(!VIEW){var sl=shownList(),pd=dkey(now);sl.forEach(function(sp){var pl=prepList(sp);if(!pl.length)return;h+='<div class="sprep"><div class="al">'+(sl.length>1?esc(sp.name||"우리 아이")+" · ":"")+'내일 준비물</div>';for(var pi=0;pi<pl.length;pi++){var pk=sp.id+"_prep_"+pl[pi];h+=chipHtml(pk,pl[pi],isOn(pd,pk));}h+='</div>';});}
   var q=quoteOfDay(now);
   h+='<button class="qt" data-act="quote"><span class="lb">'+ic("star")+'오늘의 명언</span><span class="q">'+q.t.split("\n").map(esc).join("<br>")+'</span><span class="w">— '+esc(q.a)+'</span></button>';
   return h+'</div>';
@@ -701,9 +707,9 @@ function heroHtml(p,x,date){
     var e=x.cur,total=Math.max(1,e.end-e.start),left=e.end-x.m,pct=Math.min(100,Math.max(0,(x.m-e.start)/total*100));
     h+='<div class="htitle">'+esc(e.title)+'</div><div class="sub2">'+fmt(e.start)+" ~ "+fmt(e.end>=1440?1439:e.end)+'</div><div class="pbar2"><i style="width:'+pct+'%"></i></div><div class="rem">'+dur(left)+' 남았어요</div>';
     for(var j=0;j<e.todos.length;j++){var k=p.id+"_"+e.id+"_"+j;h+=todoRow(k,e.todos[j].t,isOn(date,k));}
-  }else if(x.next){h+='<div class="big">쉬는 시간</div><div class="rem">다음 일정까지 '+dur(x.next.start-x.m)+'</div>';}
-  else if(!x.D.events.length){h+='<div class="big">오늘은 일정이 없어요</div>';}
-  else{h+='<div class="big">오늘 일정이 모두 끝났어요</div><div class="sub2">수고했어요</div>';}
+  }else if(x.next){h+='<div class="hmsg">쉬는 시간</div><div class="rem">다음 일정까지 '+dur(x.next.start-x.m)+'</div>';}
+  else if(!x.D.events.length){h+='<div class="hmsg">'+(VIEW?"내일은":"오늘은")+' 일정이 없어요</div>';}
+  else{h+='<div class="hmsg">오늘 일정이 모두 끝났어요</div><div class="sub2">수고했어요</div>';}
   return h+'</div>';
 }
 function nextHtml(x){
@@ -716,6 +722,14 @@ function alldayCard(p,D,date,compact){
   if(!D.allday.length)return '';
   var lb=(VIEW?"내일":"오늘")+" 할 일",h='<div class="card'+(compact?" cp":"")+'"><div class="cl">'+lb+'</div>';
   for(var a=0;a<D.allday.length;a++){var k=p.id+"_"+D.allday[a].id+"_t",on=isOn(date,k);h+=compact?chipHtml(k,D.allday[a].title,on):todoRowAny(k,D.allday[a].title,on);}
+  return h+'</div>';
+}
+/* "내일 준비물" card: bottom of the today screen, ticks count toward the day's stamp */
+function prepCard(p,now){
+  if(VIEW)return '';
+  var l=prepList(p);if(!l.length)return '';
+  var date=dkey(now),h='<div class="card prepc"><div class="cl">내일 준비물 · 챙겼어요?</div>';
+  for(var i=0;i<l.length;i++){var k=p.id+"_prep_"+l[i];h+=todoRow(k,l[i],isOn(date,k));}
   return h+'</div>';
 }
 function infoHtml(now){
@@ -749,7 +763,7 @@ function todayScreen(p,now){
   h+='<div class="ptl" style="height:'+(nh*PPH)+'rem"><div class="plab">';
   for(var hh=Math.ceil(DAY.s);hh<DAY.e;hh++)h+='<span style="top:'+((hh-DAY.s)/nh*100)+'%">'+(hh%12||12)+'시</span>';
   h+='</div><div class="pin">'+blocksHtml(p,now,layout(D.events),S0,E0,nh)+'</div></div>';
-  return h+(VIEW?'':'<button class="fab" data-act="gonow">지금으로</button>');
+  return h+prepCard(p,now)+(VIEW?'':'<button class="fab" data-act="gonow">지금으로</button>');
 }
 function catScreen(p,now){
   var n=stampCount(p.id),sg=stageOf(n),date=dkey(now),tt=totals(p,date);
