@@ -33,7 +33,7 @@
   .pal-green{--c:#3ecf8e;--cs:#17402f;--ci:#c4f2dc;--cf:#08301f}
 }
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-html{font-size:min(1.5625vw,2.0833vh);height:100%}
+html{font-size:clamp(12px,min(1.5625vw,2.0833vh),32px);height:100%}
 body{margin:0;height:100%;overflow:hidden;background:var(--bg);color:var(--fg);font-family:var(--font-b);line-height:1.3;-webkit-user-select:none;user-select:none}
 #app{height:100%;display:flex;flex-direction:column;gap:.75rem;padding-block:1.25rem;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
 button{font-family:inherit;color:inherit;border:0;background:none;padding:0;text-align:left;cursor:pointer}
@@ -58,9 +58,10 @@ button{font-family:inherit;color:inherit;border:0;background:none;padding:0;text
 #dt{display:flex;flex-direction:column;gap:.15rem;min-width:0}
 #dr{display:flex;align-items:center;gap:.5rem;min-width:0}
 .dsw{display:inline-flex;background:var(--card);border-radius:.8rem;padding:.15rem;gap:.1rem;flex:none}
-.dsw button{height:1.7rem;padding:0 .75rem;border-radius:.65rem;font-size:.95rem;font-weight:700;color:var(--muted)}
+.dsw button{height:1.7rem;min-height:44px;padding:0 .75rem;border-radius:.65rem;font-size:.95rem;font-weight:700;color:var(--muted)}
 .dsw button.on{background:var(--fg);color:var(--bg)}
 .ro{cursor:default}
+:focus-visible{outline:.2rem solid var(--fg);outline-offset:.15rem}
 #calh .hint{font-size:.8125rem;color:var(--muted);white-space:nowrap}
 #calh .seg{height:1.75rem;padding:0 .7rem;font-size:.875rem;border-radius:.6rem}
 .seg{height:2.5rem;padding:0 1.25rem;border-radius:.9rem;background:var(--card);font-size:1.125rem;font-weight:500;display:flex;align-items:center;gap:.5rem}
@@ -84,32 +85,32 @@ button{font-family:inherit;color:inherit;border:0;background:none;padding:0;text
 .kh .nm small{display:block;font-size:1.125rem;font-weight:400;color:var(--muted)}
 .kh .left{margin-left:auto;font-size:1.125rem;font-weight:700;border-radius:.9rem;padding:.4rem .9rem;text-align:center;white-space:nowrap;background:var(--cs);color:var(--ci)}
 .kh .left.done{background:var(--ok);color:var(--on-ok)}
-.ad{height:2.75rem;display:flex;align-items:center;gap:.5rem;padding:0 .25rem;overflow:hidden;white-space:nowrap}
+.ad{min-height:2.75rem;flex:none;display:flex;align-items:center;gap:.5rem;padding:0 .25rem;overflow-x:auto;overflow-y:hidden;white-space:nowrap;scrollbar-width:none}
 .ad .al{font-size:1.125rem;color:var(--muted)}
 .tl{position:relative;flex:1;border-radius:1.25rem;background:var(--card);overflow-x:hidden;overflow-y:auto;min-height:0;touch-action:pan-y;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;scrollbar-width:none}
 .tl::-webkit-scrollbar{display:none}
 .tli{position:relative;width:100%}
 .tl .gl{position:absolute;left:0;right:0;border-top:.125rem solid var(--soft)}
-.chipx{background:var(--chip);color:var(--fg);border-radius:.75rem;padding:.2rem .75rem .2rem .45rem;font-size:1.125rem;font-weight:500;display:inline-flex;gap:.5rem;align-items:center;cursor:pointer;line-height:1.3}
-.chipx i{width:1.4rem;height:1.4rem;border-radius:.45rem;border:.125rem solid var(--muted);display:grid;place-items:center;font-style:normal;color:#fff;font-size:1rem;flex:none}
+.chipx{background:var(--chip);color:var(--fg);border-radius:.75rem;min-height:2.5rem;padding:.2rem .75rem .2rem .45rem;font-size:1.125rem;font-weight:500;display:inline-flex;gap:.5rem;align-items:center;cursor:pointer;line-height:1.3}
+.chipx i{width:1.4rem;height:1.4rem;border-radius:.45rem;border:.125rem solid var(--muted);display:grid;place-items:center;font-style:normal;color:var(--on-ok);font-size:1rem;flex:none}
 .chipx.on{text-decoration:line-through;color:var(--muted)}.chipx.on i{background:var(--ok);border-color:var(--ok)}
 .b{position:absolute;min-height:2.4rem;border-radius:.9rem;padding:.3rem .75rem;overflow:hidden;overflow:clip;cursor:pointer;display:block;background:var(--cs);color:var(--ci)}
 .b.now{background:var(--c);color:var(--cf);box-shadow:0 .4rem 1rem rgba(0,0,0,.18);outline:.15rem solid var(--ci);outline-offset:-.15rem;z-index:2}
-.b.past{opacity:.7}
+.b.past{filter:saturate(.6)}
 .b .bt{display:flex;align-items:baseline;gap:.5rem;white-space:nowrap;line-height:1.3;position:sticky;top:0;background:inherit;z-index:1}
 .b .tt{font-size:1.2rem;font-weight:700;min-width:0;overflow:hidden;text-overflow:ellipsis}
 .b.ln .tt{font-size:1.1rem}
-.b small{font-size:1.125rem;font-weight:400;opacity:.8}
+.b small{font-size:1.125rem;font-weight:400}
 .b .pg{margin-left:auto;font-size:1.125rem;font-weight:700;background:var(--card);color:var(--fg);border-radius:.7rem;padding:0 .5rem;display:none}
-.b .pg.ok{background:var(--ok);color:#fff}
+.b .pg.ok{background:var(--ok);color:var(--on-ok)}
 .b .tk{display:flex;flex-wrap:wrap;gap:.4rem;margin-top:.3rem}
 .nowln{position:absolute;left:0;right:0;height:0;border-top:.2rem solid var(--now);z-index:3;pointer-events:none}
 .nowln::before{content:"";position:absolute;left:-.05rem;top:-.5rem;width:.8rem;height:.8rem;border-radius:50%;background:var(--now)}
 
 /* side */
-.side{width:14.25rem;display:flex;flex-direction:column;gap:1.1rem;padding-top:.25rem;flex:none;overflow:hidden}
+.side{width:14.25rem;display:flex;flex-direction:column;gap:1.1rem;padding-top:.25rem;flex:none;overflow-x:hidden;overflow-y:auto;scrollbar-width:none}
 .sprep{display:flex;flex-direction:column;gap:.35rem}.sprep .al{font-size:1.125rem;color:var(--muted)}
-.prepc{margin:.75rem 0 5rem}
+.prepc{margin:.75rem 0 0}.fabsp{height:5rem}
 .wr{display:flex;align-items:center;gap:.75rem;font-size:1.25rem;font-weight:500;position:relative}
 .wr .ic{font-size:2.1rem;flex:none}.wr small{display:block;font-size:1.125rem;color:var(--muted);font-weight:400}
 .tag{font-size:1rem;background:var(--soft);color:var(--muted);border-radius:.5rem;padding:0 .4rem;margin-left:auto}
@@ -343,7 +344,7 @@ var SAMPLE={
   ["18:00","19:00","저녁 식사","meal",[]],["19:00","19:40","씻기","home",[]],["19:40","20:20","내일 준비","home",["책가방 챙기기"]],["20:40","21:10","잠자리","sleep",[]]]}
 };
 var EV={},EVN={},EVKEY="familyboard.ev.v1",VIEW=0; /* EV = today's events, EVN = tomorrow's; VIEW 0 = today, 1 = tomorrow (read-only preview) */
-try{var evc=JSON.parse(localStorage.getItem(EVKEY)||"null");if(evc&&evc.date===dkey(new Date())&&evc.d){EV=evc.d;EVN=evc.n||{};}}catch(e){}
+try{var evc=JSON.parse(localStorage.getItem(EVKEY)||"null");var _n=new Date();if(evc&&evc.d){if(evc.date===dkey(_n)){EV=evc.d;EVN=evc.n||{};}else if(evc.date===dkey(new Date(_n.getFullYear(),_n.getMonth(),_n.getDate()-1))&&evc.n){EV=evc.n;}}}catch(e){}
 function saveEv(){try{localStorage.setItem(EVKEY,JSON.stringify({date:dkey(new Date()),d:EV,n:EVN}));}catch(e){}}
 function dayOf(p,off){
   if(p.cal)return (off?EVN:EV)[p.id]||{allday:[],events:[]};
@@ -354,8 +355,8 @@ function dayOf(p,off){
 
 /* ---------- storage ---------- */
 var KEY="familyboard.v1",ST;
-function defaults(){return {profiles:[],current:null,checks:{},stamps:{},city:0};}
-function load(){try{var o=JSON.parse(localStorage.getItem(KEY)||"null");if(o&&o.profiles)return merge(defaults(),o);}catch(e){}return defaults();}
+function defaults(){return {profiles:[],current:null,checks:{},stamps:{},times:{},city:0};}
+function load(){try{var o=JSON.parse(localStorage.getItem(KEY)||"null");if(o&&Array.isArray(o.profiles)){var r=merge(defaults(),o);["checks","stamps","times"].forEach(function(k){if(!r[k]||typeof r[k]!=="object")r[k]={};});return r;}}catch(e){}return defaults();}
 function merge(a,b){for(var k in b)a[k]=b[k];return a;}
 function save(){try{localStorage.setItem(KEY,JSON.stringify(ST));}catch(e){}}
 ST=load();
@@ -373,7 +374,7 @@ function isOn(date,key){return !!(ST.checks[date]&&ST.checks[date][key]);}
 function stampCount(pid){var o=ST.stamps[pid]||{},n=0;for(var d in o)if(o[d])n++;return n;}
 function stageOf(n){var s=0;for(var i=0;i<STAGE.length;i++)if(n>=STAGE[i].at)s=i;return s;}
 function stamped(pid,date){return !!(ST.stamps[pid]&&ST.stamps[pid][date]);}
-function kidKeys(p){var D=dayOf(p),keys=[],i,j;for(i=0;i<D.allday.length;i++)keys.push(p.id+"_"+D.allday[i].id+"_t");for(i=0;i<D.events.length;i++)for(j=0;j<D.events[i].todos.length;j++)keys.push(p.id+"_"+D.events[i].id+"_"+j);var pl=prepList(p);for(i=0;i<pl.length;i++)keys.push(p.id+"_prep_"+pl[i]);return keys;}
+function kidKeys(p){var D=dayOf(p),keys=[],i,j;for(i=0;i<D.allday.length;i++)keys.push(p.id+"_"+D.allday[i].id+"_t");for(i=0;i<D.events.length;i++){if(D.events[i].end<=DAY.s*60||D.events[i].start>=DAY.e*60)continue;for(j=0;j<D.events[i].todos.length;j++)keys.push(p.id+"_"+D.events[i].id+"_"+j);}var pl=prepList(p);for(i=0;i<pl.length;i++)keys.push(p.id+"_prep_"+pl[i]);return keys;}
 /* tomorrow's items marked "준비물:" (deduped); ticking them counts toward today's stamp */
 function prepList(p){var D=dayOf(p,1),seen={},out=[];D.events.forEach(function(e){e.todos.forEach(function(t){if(t.prep&&!seen[t.t]){seen[t.t]=1;out.push(t.t);}});});return out;}
 function totals(p,date){var ks=kidKeys(p),c=0;for(var i=0;i<ks.length;i++)if(isOn(date,ks[i]))c++;return {n:ks.length,c:c};}
@@ -381,10 +382,12 @@ function toggle(p,date,key){
   var before=stampCount(p.id),cele=null;
   if(!ST.checks[date])ST.checks[date]={};
   ST.checks[date][key]=!isOn(date,key);
+  /* when each item was ticked (for a later parent view); a stamp once earned stays for the day */
+  if(!ST.times)ST.times={};if(!ST.times[date])ST.times[date]={};
+  if(ST.checks[date][key])ST.times[date][key]=Date.now();else delete ST.times[date][key];
   var tt=totals(p,date),has=stamped(p.id,date);
   if(!ST.stamps[p.id])ST.stamps[p.id]={};
   if(tt.n&&tt.c===tt.n&&!has){ST.stamps[p.id][date]=true;cele={from:stageOf(before),to:stageOf(before+1)};}
-  else if(tt.c<tt.n&&has)ST.stamps[p.id][date]=false;
   save();return cele;
 }
 
@@ -528,7 +531,10 @@ function gLoadCals(){
 }
 function refreshEvents(){
   if(!G.connected)return Promise.resolve();
-  if(!G.token||G.exp<Date.now()+60000){G.need=true;render();return Promise.resolve();}
+  if(!G.token||G.exp<Date.now()+60000){G.need=true;
+    /* try a silent renewal at most every 10 minutes (works only if the browser allows it; otherwise the reconnect card shows) */
+    if(Date.now()-(G.lastSilent||0)>600000){G.lastSilent=Date.now();try{gRequest(false);}catch(e){}}
+    render();return Promise.resolve();}
   var now=new Date(),t0=new Date(now.getFullYear(),now.getMonth(),now.getDate()),t1=new Date(t0.getTime()+2*86400000),today=dkey(now),tmr=dkey(new Date(t0.getTime()+86400000));
   var jobs=ST.profiles.filter(function(p){return p.cal;}).map(function(p){
     var url="https://www.googleapis.com/calendar/v3/calendars/"+encodeURIComponent(p.cal.id)+"/events?singleEvents=true&orderBy=startTime&maxResults=250&timeMin="+encodeURIComponent(t0.toISOString())+"&timeMax="+encodeURIComponent(t1.toISOString());
@@ -630,7 +636,7 @@ function layout(evs){
   cl.forEach(function(c){var lanes=[];c.forEach(function(e){var l=0;while(lanes[l]!==undefined&&lanes[l]>e.start)l++;lanes[l]=e._ve;e.lane=l;});c.forEach(function(e){e.lanes=lanes.length;});});
   return s;
 }
-function chipHtml(key,label,on){return '<span class="chipx'+(on?" on":"")+(VIEW?" ro":"")+'"'+(VIEW?'':' data-act="tick" data-key="'+esc(key)+'"')+'><i>'+(on?ic("check"):"")+'</i>'+esc(label)+'</span>';}
+function chipHtml(key,label,on){return '<span class="chipx'+(on?" on":"")+(VIEW?" ro":"")+'"'+(VIEW?'':' data-act="tick" data-key="'+esc(key)+'" role="checkbox" tabindex="0" aria-checked="'+(on?"true":"false")+'"')+'><i>'+(on?ic("check"):"")+'</i>'+esc(label)+'</span>';}
 /* one hour axis, then one column per shown child */
 function boardHtml(list,now){
   var nh=DAY.e-DAY.s;
@@ -682,7 +688,7 @@ function sideHtml(now){
 function fitBlocks(){
   var root=rootPx(),bl=document.querySelectorAll(".b");
   for(var i=0;i<bl.length;i++){var b=bl[i],tk=b.querySelector(".tk"),pg=b.querySelector(".pg");if(!tk)continue;
-    var fits=b.clientHeight>=4.4*root;tk.style.display=fits?"flex":"none";if(pg)pg.style.display=fits?"none":"inline-block";
+    var fits=b.clientHeight>=5.2*root;tk.style.display=fits?"flex":"none";if(pg)pg.style.display=fits?"none":"inline-block";
     if(fits&&b.scrollHeight>b.clientHeight+2){tk.style.display="none";if(pg)pg.style.display="inline-block";}}
 }
 
@@ -708,6 +714,7 @@ function heroHtml(p,x,date){
     h+='<div class="htitle">'+esc(e.title)+'</div><div class="sub2">'+fmt(e.start)+" ~ "+fmt(e.end>=1440?1439:e.end)+'</div><div class="pbar2"><i style="width:'+pct+'%"></i></div><div class="rem">'+dur(left)+' 남았어요</div>';
     for(var j=0;j<e.todos.length;j++){var k=p.id+"_"+e.id+"_"+j;h+=todoRow(k,e.todos[j].t,isOn(date,k));}
   }else if(x.next){h+='<div class="hmsg">쉬는 시간</div><div class="rem">다음 일정까지 '+dur(x.next.start-x.m)+'</div>';}
+  else if(!x.D.events.length&&p.cal&&(G.need||!EV[p.id])){h+='<div class="hmsg">일정을 아직 못 불러왔어요</div><div class="sub2">엄마·아빠에게 알려 주세요</div>';}
   else if(!x.D.events.length){h+='<div class="hmsg">'+(VIEW?"내일은":"오늘은")+' 일정이 없어요</div>';}
   else{h+='<div class="hmsg">오늘 일정이 모두 끝났어요</div><div class="sub2">수고했어요</div>';}
   return h+'</div>';
@@ -751,19 +758,19 @@ function calNotice(p){
 }
 function nowScreen(p,now){
   var x=curNext(p,now),date=dkey(now);
-  return calNotice(p)+heroHtml(p,x,date)+alldayCard(p,x.D,date)+nextHtml(x)+infoHtml(now)+'<div class="hintrow">'+calHint()+'</div>';
+  return calNotice(p)+heroHtml(p,x,date)+alldayCard(p,x.D,date)+prepCard(p,now)+nextHtml(x)+infoHtml(now)+'<div class="hintrow">'+calHint()+'</div>';
 }
 function todayScreen(p,now){
   var D=dayOf(p,VIEW),m=now.getHours()*60+now.getMinutes(),date=vkey(now),S0=DAY.s*60,E0=DAY.e*60,nh=DAY.e-DAY.s,total=D.events.length,done=0,vd=vday(now);
   D.events.forEach(function(e){if(e.end<=m)done++;});
   /* one sticky row: day switch + short summary (stays visible while the timeline scrolls) */
-  var sum=VIEW?(vd.getMonth()+1)+"월 "+vd.getDate()+"일 "+DOW[vd.getDay()]+"요일 · "+(total?total+"개":"일정 없어요"):(total?total+"개 중 "+done+"개 지났어요":"오늘은 일정이 없어요");
+  var sum=VIEW?(vd.getMonth()+1)+"월 "+vd.getDate()+"일 "+DOW[vd.getDay()]+"요일 · "+(total?total+"개":"일정 없어요"):(total?"일정 "+total+"개 중 "+done+"개 지났어요":"오늘은 일정이 없어요");
   var h='<div class="dbar">'+daySw()+'<span class="dsum">'+sum+'</span></div>';
   h+=calNotice(p)+alldayCard(p,D,date,true);
   h+='<div class="ptl" style="height:'+(nh*PPH)+'rem"><div class="plab">';
   for(var hh=Math.ceil(DAY.s);hh<DAY.e;hh++)h+='<span style="top:'+((hh-DAY.s)/nh*100)+'%">'+(hh%12||12)+'시</span>';
   h+='</div><div class="pin">'+blocksHtml(p,now,layout(D.events),S0,E0,nh)+'</div></div>';
-  return h+prepCard(p,now)+(VIEW?'':'<button class="fab" data-act="gonow">지금으로</button>');
+  return h+prepCard(p,now)+'<div class="fabsp"></div>'+(VIEW?'':'<button class="fab" data-act="gonow">지금으로</button>');
 }
 function catScreen(p,now){
   var n=stampCount(p.id),sg=stageOf(n),date=dkey(now),tt=totals(p,date);
@@ -877,7 +884,7 @@ function sheetSettings(setup){
   if(setup)h+='<div class="sub">이 기기에서 볼 아이를 알려주세요. 패드라면 아이를 더 추가할 수 있어요.</div>';
   h+='<div class="sec">아이</div>';
   ST.profiles.forEach(function(p){
-    h+='<div class="prow"><input data-f="name" data-id="'+esc(p.id)+'" value="'+esc(p.name==="우리 아이"?"":p.name)+'" placeholder="아이 이름 (예: 채아)" maxlength="10"><input data-f="grade" data-id="'+esc(p.id)+'" value="'+esc(p.grade)+'" placeholder="학년 (예: 2학년)" maxlength="8"><div class="prow2"><div class="dots">';
+    h+='<div class="prow"><input data-f="name" data-id="'+esc(p.id)+'" value="'+esc(p.name==="우리 아이"?"":p.name)+'" placeholder="아이 이름 (예: 하늘)" maxlength="10"><input data-f="grade" data-id="'+esc(p.id)+'" value="'+esc(p.grade)+'" placeholder="학년 (예: 2학년)" maxlength="8"><div class="prow2"><div class="dots">';
     COLORS.forEach(function(c){h+='<button class="dot pal-'+c.id+(p.color===c.id?" on":"")+'" data-act="color" data-id="'+esc(p.id)+'" data-c="'+c.id+'" aria-label="'+c.l+'"></button>';});
     h+='</div>'+(ST.profiles.length>1?'<button class="pb x" data-act="delp" data-id="'+esc(p.id)+'">삭제</button>':'')+'</div></div>';
   });
@@ -986,7 +993,7 @@ document.addEventListener("change",function(e){
 });
 document.addEventListener("click",function(e){
   var el=e.target;while(el&&el!==document&&!(el.getAttribute&&el.getAttribute("data-act")))el=el.parentNode;
-  if(!el||el===document){if(e.target===$("sheet")&&!settingsOpen)closeSheet();return;}
+  if(!el||el===document){if(e.target===$("sheet")&&!settingsOpen&&!$("rcode"))closeSheet();return;}
   var a=el.getAttribute("data-act"),date=dkey(new Date()),p=cur();
   if(a==="gonow"){if(isPhone())scrollTodayToNow(true);else scrollNow(true);}
   else if(a==="day"){VIEW=el.getAttribute("data-v")==="1"?1:0;userMoved=false;needScroll=true;render();}
@@ -1033,7 +1040,7 @@ document.addEventListener("click",function(e){
       else pmsg(failOnce());
     });
   }
-  else if(a==="wipe"){if(confirm("복구 코드가 없으면 앱을 처음부터 다시 설정해야 해요.\n아이 정보, 도장 기록, 구글 연결이 모두 지워져요. 계속할까요?"))wipeAll();}
+  else if(a==="wipe"){var wa=11+Math.floor(Math.random()*8),wb=13+Math.floor(Math.random()*8),wr=prompt("어른만 할 수 있어요. 계산해서 숫자를 적어 주세요.\n"+wa+" × "+wb+" = ?");if(wr!==null&&+String(wr).replace(/\s/g,"")===wa*wb&&confirm("복구 코드가 없으면 앱을 처음부터 다시 설정해야 해요.\n아이 정보, 도장 기록, 구글 연결이 모두 지워져요. 계속할까요?"))wipeAll();}
   else if(a==="copyrec"){
     var cd=el.getAttribute("data-code");
     try{navigator.clipboard.writeText(fmtRec(cd)).then(function(){pmsg("복사했어요");},function(){pmsg("복사하지 못했어요. 직접 적어 두세요.");});}catch(er){pmsg("복사하지 못했어요. 직접 적어 두세요.");}
@@ -1049,7 +1056,8 @@ document.addEventListener("click",function(e){
 });
 
 document.addEventListener("keydown",function(e){
-  if(e.key==="Escape"&&$("sheet").classList.contains("show")){if(settingsOpen)finishSettings();else closeSheet();}
+  if((e.key==="Enter"||e.key===" ")&&e.target&&e.target.getAttribute&&e.target.getAttribute("role")==="checkbox"){e.preventDefault();e.target.click();return;}
+  if(e.key==="Escape"&&$("sheet").classList.contains("show")){if(settingsOpen)finishSettings();else if(!$("rcode"))closeSheet();}
   if(e.key==="Enter"&&e.target&&(e.target.id==="pin1"||e.target.id==="pin2"||e.target.id==="rec")){var b=document.querySelector("#sbox [data-default]");if(b)b.click();}
 });
 
